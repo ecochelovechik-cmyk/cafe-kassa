@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Центр плова — Касса</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" href="./icon-192.png">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Касса">
+<meta name="format-detection" content="telephone=no">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827;-webkit-text-size-adjust:100%}
+header{background:#111827;color:white;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+h1{font-size:20px;margin:0}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button{border:0;border-radius:10px;padding:11px 14px;font-size:15px;cursor:pointer;background:#e5e7eb;font-family:inherit}
+button:active{opacity:.7}
+button.primary{background:#16a34a;color:white}
+.danger{background:#dc2626;color:white}
+.dark{background:#374151;color:white}
+.blue{background:#2563eb;color:white}
+nav button.active{background:#374151;color:white}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.card{background:white;border-radius:14px;padding:14px;box-shadow:0 1px 5px #0001;text-align:left}
+.card b{display:block;margin-bottom:8px}
+.price{color:#15803d;font-weight:bold}
+.tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.table{background:white;padding:20px;border-radius:14px;text-align:center;border:2px solid #e5e7eb}
+.open{border-color:#f59e0b;background:#fffbeb}
+.small{font-size:13px;color:#6b7280}
+.panel{background:white;border-radius:14px;padding:16px;margin-top:14px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #eee;padding:9px 0}
+.row:last-child{border-bottom:0}
+input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;margin:5px 0 10px;font-size:15px;font-family:inherit}
+.actions{display:flex;gap:7px;flex-wrap:wrap}
+.hidden{display:none}
+.stat{font-size:25px;font-weight:bold}
+.muted{color:#6b7280}
+.card.item{position:relative;cursor:pointer;padding-right:46px;min-height:78px;-webkit-tap-highlight-color:transparent}
+.card.item:active{background:#f3f4f6}
+.card.has{border:2px solid #16a34a;background:#f0fdf4;padding:12px 44px 12px 12px}
+.cnt{position:absolute;top:9px;right:9px;background:#16a34a;color:#fff;border-radius:999px;min-width:30px;height:30px;line-height:30px;text-align:center;font-weight:bold;font-size:15px;padding:0 8px}
+.minus{position:absolute;bottom:8px;right:8px;background:#e5e7eb;border-radius:9px;width:36px;height:32px;line-height:32px;text-align:center;font-weight:bold;font-size:20px;color:#374151}
+.minus:active{background:#d1d5db}
+#bar{position:fixed;left:0;right:0;bottom:0;background:#111827;color:#fff;padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:10;box-shadow:0 -2px 12px #0003}
+#bar .s{font-size:13px;color:#9ca3af}
+#bar .m{font-size:20px;font-weight:bold}
+#bar button{padding:12px 16px}
+.pad{height:calc(96px + env(safe-area-inset-bottom))}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:bold;white-space:nowrap}
+.b-hall{background:#dcfce7;color:#166534}
+.b-street{background:#fef3c7;color:#92400e}
+.b-deliv{background:#dbeafe;color:#1e40af}
+.b-void{background:#fee2e2;color:#991b1b}
+.sect{margin:22px 0 10px;font-size:18px;font-weight:bold;color:#374151;display:flex;align-items:baseline;gap:10px;border-bottom:2px solid #d1d5db;padding-bottom:7px}
+.sect.first{margin-top:0}
+.sect .small{font-weight:normal}
+.tables.street .table{background:#fefce8;border-color:#e5e7eb}
+.tables.street .table.open{background:#fffbeb;border-color:#f59e0b}
+.cats{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.cats button{padding:8px 12px;font-size:14px}
+.cats button.on{background:#111827;color:white}
+.note{font-size:13px;color:#1e40af;background:#dbeafe;border-radius:7px;padding:2px 8px;display:inline-block;margin-top:3px}
+.qty{min-width:34px;text-align:center;font-weight:bold}
+.warn{background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.tot{font-size:22px;margin:12px 0}
+.sub{display:flex;justify-content:space-between;padding:4px 0;color:#6b7280;font-size:14px}
+label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
+#receipt{display:none}
+@media print{
+ body>*{display:none!important}
+ #receipt{display:block!important;font-family:"Courier New",monospace;font-size:13px;width:72mm;margin:0;color:#000}
+ #receipt hr{border:0;border-top:1px dashed #000;margin:6px 0}
+ #receipt .c{text-align:center}
+ #receipt .r{display:flex;justify-content:space-between}
+ #receipt .big{font-size:16px;font-weight:bold}
+ @page{margin:3mm}
+}
+</style>
+</head>
+<body>
+<header><h1>🍚 Центр плова — Касса</h1><span id="clock"></span></header>
+<div class="wrap">
+<nav>
+<button id="nav-tables" onclick="show('tables')">🪑 Столы</button>
+<button id="nav-delivery" onclick="show('delivery')">🚚 Доставка</button>
+<button id="nav-cash" onclick="show('cash')">💰 Касса</button>
+<button id="nav-history" onclick="show('history')">📋 История</button>
+<button id="nav-reports" onclick="show('reports')">📊 Отчёты</button>
+<button id="nav-menu" onclick="show('menu')">🍽️ Меню</button>
+<button id="nav-settings" onclick="show('settings')">⚙️ Данные</button>
+</nav>
+<section id="tables"></section>
+<section id="delivery" class="hidden"></section>
+<section id="cash" class="hidden"></section>
+<section id="history" class="hidden"></section>
+<section id="reports" class="hidden"></section>
+<section id="menu" class="hidden"></section>
+<section id="settings" class="hidden"></section>
+</div>
+<div id="bar" class="hidden"></div>
+<div id="receipt"></div>
+<script>
+const KEY='pilaf_pos_v1';
+const PAYS=['Наличные','WeChat Pay','Alipay','Карта'];
+const DEFAULT_MENU=[
+ ['Плов',40,'Основные'],['Казан-кебаб',45,'Основные'],['Манты',30,'Основные'],
+ ['Котлета с жареным картофелем',30,'Основные'],['Чахохбили',30,'Основные'],
+ ['Шурпа',30,'Супы'],['Мастава',30,'Супы'],['Чечевичный суп',30,'Супы'],
+ ['Свежий салат',10,'Салаты'],['Оливье',15,'Салаты'],['Лепёшка',5,'Выпечка'],
+ ['Кола 0.33',5,'Напитки'],['Пепси',5,'Напитки'],['Фанта',5,'Напитки'],
+ ['Спрайт',5,'Напитки'],['Чай с лимоном',10,'Напитки'],['Кефир',8,'Напитки']
+].map(m=>({n:m[0],p:m[1],c:m[2]}));
+
+const DEFAULT_FIXED=[
+ {n:'Аренда',s:7500,pay:'Наличные'},
+ {n:'Зарплата',s:5500,pay:'Наличные'},
+ {n:'Свет',s:5000,pay:'Наличные'},
+ {n:'Налог',s:1740,pay:'Наличные'},
+ {n:'Интернет',s:150,pay:'Наличные'}
+];
+let storageOk=(function(){
+ try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true}catch(e){return false}
+})();
+let db=load();
+let histFilter='all';
+
+function load(){
+ let d=null;
+ try{d=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){d=null}
+ if(!d)return{v:2,settings:{hall:6,street:7,footer:'Спасибо за визит! 谢谢惠顾!'},counter:1,menu:DEFAULT_MENU.slice(),orders:[],open:{},delivery:{},shifts:[],shiftStart:null,cash:[],waste:[],fixed:DEFAULT_FIXED.map(f=>({n:f.n,s:f.s,pay:f.pay})),fixedSkip:[],lastBackup:0};
+ // миграция со старой версии (меню было массивом [название, цена])
+ if(!d.v){
+  d.menu=(d.menu||[]).map(m=>Array.isArray(m)?{n:m[0],p:+m[1],c:'Прочее'}:m);
+  d.settings={hall:6,street:7,footer:'Спасибо за визит! 谢谢惠顾!'};
+  d.counter=(d.orders||[]).length+1;d.lastBackup=0;d.v=2;
+ }
+ d.settings=d.settings||{hall:6,street:7,footer:''};
+ d.orders=d.orders||[];d.open=d.open||{};d.delivery=d.delivery||{};d.menu=d.menu||[];d.shifts=d.shifts||[];d.cash=d.cash||[];d.waste=d.waste||[];if(!d.fixed)d.fixed=DEFAULT_FIXED.map(f=>({n:f.n,s:f.s,pay:f.pay}));d.fixedSkip=d.fixedSkip||[];
+ return d;
+}
+function save(){
+ if(!storageOk)return;
+ try{localStorage.setItem(KEY,JSON.stringify(db))}
+ catch(e){storageOk=false;alert('⚠️ Не удалось сохранить заказ — память браузера переполнена или недоступна.\n\nСрочно сделайте бэкап: «⚙️ Данные» → «Сохранить копию в файл».')}
+}
+function money(n){return Number(n||0).toFixed(2)+' ¥'}
+function tables(){return (+db.settings.hall||0)+(+db.settings.street||0)}
+function tableName(i){
+ i=+i;
+ let hall=+db.settings.hall||0;
+ return i>hall?'Улица '+(i-hall):'Стол '+i;
+}
+// имя из закрытого заказа: сохранённое в чеке имеет приоритет — настройки зала могли поменяться
+function orderName(o){return o.type==='table'?(o.label||tableName(o.id)):'Доставка'}
+function hideBar(){document.getElementById('bar').classList.add('hidden')}
+function setSection(id){
+ hideBar();
+ for(const x of ['tables','delivery','cash','history','reports','menu','settings']){
+  document.getElementById(x).classList.toggle('hidden',x!==id);
+  document.getElementById('nav-'+x).classList.toggle('active',x===id);
+ }
+}
+function show(id){
+ document.getElementById('bar').classList.add('hidden');
+ setSection(id);
+ ({tables:renderTables,delivery:renderDelivery,cash:renderCash,history:renderHistory,reports:renderReports,menu:renderMenu,settings:renderSettings})[id]();
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+/* ---------- СТОЛЫ ---------- */
+function tableCard(i){
+ let o=db.open[i],sum=total(o);
+ return `<button class="table ${o?'open':''}" onclick="openTable(${i})"><b>${tableName(i)}</b>${o?`<div class="price">${money(sum)}</div><div class="small">${o.items.length} поз. · ${since(o.started)}</div>`:'<div class="small">Свободен</div>'}</button>`;
+}
+function renderTables(){
+ hideBar();
+ let hall=+db.settings.hall||0,street=+db.settings.street||0,h=backupWarning();
+ if(hall){
+  let busy=0;for(let i=1;i<=hall;i++)if(db.open[i])busy++;
+  h+=`<div class="sect first">🏠 Зал <span class="small">${busy?busy+' из '+hall+' занято':hall+' столов, все свободны'}</span></div><div class="tables">`;
+  for(let i=1;i<=hall;i++)h+=tableCard(i);
+  h+='</div>';
+ }
+ if(street){
+  let busy=0;for(let i=hall+1;i<=hall+street;i++)if(db.open[i])busy++;
+  h+=`<div class="sect">☀️ Улица <span class="small">${busy?busy+' из '+street+' занято':street+' столов, все свободны'}</span></div><div class="tables street">`;
+  for(let i=hall+1;i<=hall+street;i++)h+=tableCard(i);
+  h+='</div>';
+ }
+ // заказы на столах, которых уже нет в настройках — иначе деньги пропали бы с экрана
+ let lost=Object.keys(db.open).filter(k=>{let i=+k;return !(i>=1&&i<=hall+street)});
+ if(lost.length){
+  h+='<div class="sect">⚠️ Заказы на убранных столах</div><div class="warn">Этих столов больше нет в настройках, но заказы по ним открыты. Рассчитайте гостей или перенесите заказ на существующий стол.</div><div class="tables">';
+  lost.forEach(k=>{
+   let o=db.open[k];
+   h+=`<button class="table open" onclick="openTable(${+k})"><b>Стол ${esc(k)}</b><div class="price">${money(total(o))}</div><div class="small">${o.items.length} поз.</div></button>`;
+  });
+  h+='</div>';
+ }
+ if(!hall&&!street)h+='<div class="panel"><p class="muted">Столы не настроены. Зайдите в «⚙️ Данные» и укажите, сколько столов в зале и на улице.</p></div>';
+ let busy=Object.keys(db.open).length,openSum=Object.values(db.open).reduce((s,o)=>s+total(o),0);
+ if(busy)h+=`<div class="panel"><div class="row"><span>Занято столов: <b>${busy}</b></span><span>Открытых заказов на <b class="price">${money(openSum)}</b></span></div></div>`;
+ document.getElementById('tables').innerHTML=h;
+}
+function since(t){
+ if(!t)return'';
+ let m=Math.floor((Date.now()-new Date(t))/60000);
+ return m<60?m+' мин':Math.floor(m/60)+' ч '+(m%60)+' мин';
+}
+function openTable(n){
+ let o=db.open[n]||{items:[],started:new Date().toISOString()};
+ db.open[n]=o;save();orderScreen('table',n);
+}
+
+/* ---------- ЭКРАН ЗАКАЗА ---------- */
+function getOrder(type,id){return type==='table'?db.open[id]:db.delivery[id]}
+function orderScreen(type,id){
+ let o=getOrder(type,id);if(!o)return show(type==='table'?'tables':'delivery');
+ setSection(type==='table'?'tables':'delivery');
+ let title=type==='table'?tableName(id):'Доставка '+id;
+ let h=`<div class="panel"><h2>${esc(title)} <span class="small">${since(o.started)}</span></h2><div class="grid">`;
+ db.menu.forEach((m,i)=>{
+  let q=qtyOf(o,m.n);
+  h+=`<div class="card item ${q?'has':''}" onclick="addItem('${type}','${id}',${i})">`+
+     (q?`<span class="cnt">${q}</span>`:'')+
+     `<b>${esc(m.n)}</b><span class="price">${money(m.p)}</span>`+
+     (q?`<span class="minus" onclick="event.stopPropagation();decByName('${type}','${id}',${i})">−</span>`:'')+
+     '</div>';
+ });
+ h+='</div><hr><h3>Заказ</h3>';
+ if(!o.items.length)h+='<p class="muted">Пока ничего не добавлено.</p>';
+ o.items.forEach((x,i)=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${x.qty}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b><span class="actions"><button class="${x.note?'blue':''}" onclick="setNote('${type}','${id}',${i})">💬</button><button onclick="changeItem('${type}','${id}',${i},-1)">−</button><span class="qty">${x.qty}</span><button onclick="changeItem('${type}','${id}',${i},1)">+</button><button class="danger" onclick="delItem('${type}','${id}',${i})">✕</button></span></div>`);
+ let sub=total(o),disc=+o.discount||0,fin=Math.max(0,sub-disc);
+ if(o.items.length){
+  h+=`<div class="sub"><span>Сумма</span><span>${money(sub)}</span></div>`;
+  if(disc)h+=`<div class="sub"><span>Скидка</span><span>−${money(disc)}</span></div>`;
+  h+=`<div class="tot"><b>Итого: ${money(fin)}</b></div>`;
+  if(type==='delivery'&&+o.courier)h+=`<div class="sub"><span>🚴 Курьеру <span class="small">расход кафе, гость не платит</span></span><span>−${money(o.courier)}</span></div><div class="sub"><span><b>Кафе получит чистыми</b></span><span><b>${money(Math.max(0,fin-o.courier))}</b></span></div>`;
+ }
+ h+='<div class="actions">'+
+  `<button onclick="show('${type==='table'?'tables':'delivery'}')">← Назад</button>`;
+ if(o.items.length){
+  h+=`<button class="blue" onclick="printBill('${type}','${id}')">🖨 Пречек</button>`+
+     `<button onclick="setDiscount('${type}','${id}')">% Скидка</button>`;
+  if(type==='table')h+=`<button onclick="moveTable(${id})">↔ Перенести</button>`;
+  else h+=`<button class="${(+o.courier)?'blue':''}" onclick="setCourier('${id}')">🚴 Курьеру${(+o.courier)?': '+money(o.courier):''}</button>`;
+  h+=`<button class="primary" onclick="payScreen('${type}','${id}')">✓ Оплата и закрытие</button>`;
+ }
+ h+=`<button class="danger" onclick="cancelOrder('${type}','${id}')">Отменить заказ</button></div></div>`;
+ if(o.items.length)h+='<div class="pad"></div>';
+ document.getElementById(type==='table'?'tables':'delivery').innerHTML=h;
+ renderBar(type,id);
+}
+// закреплённый итог внизу: сумму видно, не прокручивая экран
+function renderBar(type,id){
+ let bar=document.getElementById('bar');
+ let o=getOrder(type,id);            // перечитываем из базы, а не верим переданному объекту
+ if(!o||!o.items||!o.items.length){bar.classList.add('hidden');return}
+ let n=o.items.reduce((s,x)=>s+x.qty,0),fin=Math.max(0,total(o)-(+o.discount||0));
+ bar.innerHTML=`<span><span class="s">${esc(type==='table'?tableName(id):'Доставка')} · ${n} шт.</span><br><span class="m">${money(fin)}</span></span>`+
+  `<span class="actions"><button class="blue" onclick="printBill('${type}','${id}')">🖨 Пречек</button>`+
+  `<button class="primary" onclick="payScreen('${type}','${id}')">✓ Оплата</button></span>`;
+ bar.classList.remove('hidden');
+}
+// сколько этого блюда уже в заказе (складываем, даже если цена в меню менялась)
+function qtyOf(o,name){return (o&&o.items||[]).filter(x=>x.name===name).reduce((s,x)=>s+x.qty,0)}
+function decByName(type,id,mi){
+ let o=getOrder(type,id),name=db.menu[mi].n;
+ for(let i=o.items.length-1;i>=0;i--){
+  if(o.items[i].name!==name)continue;
+  if(--o.items[i].qty<=0)o.items.splice(i,1);
+  break;
+ }
+ save();orderScreen(type,id);
+}
+function addItem(type,id,mi){
+ let o=getOrder(type,id),m=db.menu[mi];
+ let x=o.items.find(x=>x.name===m.n&&x.price===+m.p&&!x.note);
+ x?x.qty++:o.items.push({name:m.n,price:+m.p,cost:+m.k||0,qty:1});
+ save();orderScreen(type,id);
+}
+function changeItem(type,id,i,d){
+ let o=getOrder(type,id);o.items[i].qty+=d;
+ if(o.items[i].qty<=0)o.items.splice(i,1);
+ save();orderScreen(type,id);
+}
+function delItem(type,id,i){
+ let o=getOrder(type,id);
+ if(!confirm('Убрать «'+o.items[i].name+'» из заказа?'))return;
+ o.items.splice(i,1);save();orderScreen(type,id);
+}
+// пожелание к блюду: «без лука», «острое», «упаковать отдельно»
+function setNote(type,id,i){
+ let o=getOrder(type,id),x=o.items[i];
+ let v=prompt('Пожелание к блюду «'+x.name+'»\n(пустое поле — убрать комментарий):',x.note||'');
+ if(v===null)return;
+ v=v.trim();
+ if(v)x.note=v; else delete x.note;
+ save();orderScreen(type,id);
+}
+function total(o){return (o&&o.items||[]).reduce((s,x)=>s+x.price*x.qty,0)}
+function setDiscount(type,id){
+ let o=getOrder(type,id);
+ let v=prompt('Скидка в ¥ (0 — убрать скидку):',o.discount||0);
+ if(v===null)return;
+ o.discount=Math.max(0,+v||0);save();orderScreen(type,id);
+}
+// сколько кафе платит курьеру за эту доставку: это расход заведения, гость его не платит
+function setCourier(id){
+ let o=db.delivery[id];
+ let v=prompt('Сколько платим курьеру за эту доставку, ¥ (0 — убрать):',o.courier||0);
+ if(v===null)return;
+ o.courier=Math.max(0,+v||0);save();orderScreen('delivery',id);
+}
+function moveTable(from){
+ document.getElementById('bar').classList.add('hidden');
+ let hall=+db.settings.hall||0,street=+db.settings.street||0;
+ let h=`<div class="panel"><h2>Перенести «${tableName(from)}»</h2><p class="small">Выберите, куда пересадить гостей. Занятые места отмечены — заказы объединятся.</p>`;
+ let group=(title,a,b,cls)=>{
+  let s=`<div class="sect">${title}</div><div class="tables ${cls}">`;
+  for(let i=a;i<=b;i++){
+   if(i===+from)continue;
+   let o=db.open[i];
+   s+=`<button class="table ${o?'open':''}" onclick="doMove(${from},${i})"><b>${tableName(i)}</b><div class="small">${o?'занят · '+money(total(o)):'свободен'}</div></button>`;
+  }
+  return s+'</div>';
+ };
+ if(hall)h+=group('🏠 Зал',1,hall,'');
+ if(street)h+=group('☀️ Улица',hall+1,hall+street,'street');
+ h+=`<br><button onclick="orderScreen('table','${from}')">← Отмена</button></div>`;
+ document.getElementById('tables').innerHTML=h;
+}
+function doMove(from,to){
+ if(db.open[to]&&!confirm(tableName(to)+' занят. Объединить оба заказа в один?'))return;
+ if(db.open[to]){
+  db.open[from].items.forEach(x=>{
+   let e=db.open[to].items.find(y=>y.name===x.name&&y.price===x.price);
+   e?e.qty+=x.qty:db.open[to].items.push(x);
+  });
+  db.open[to].discount=(+db.open[to].discount||0)+(+db.open[from].discount||0);
+ }else db.open[to]=db.open[from];
+ delete db.open[from];save();show('tables');
+}
+function cancelOrder(type,id){
+ if(!confirm('Отменить заказ целиком? Он не попадёт в историю и выручку.'))return;
+ if(type==='table')delete db.open[id];else delete db.delivery[id];
+ save();show(type==='table'?'tables':'delivery');
+}
+
+/* ---------- ОПЛАТА ---------- */
+function payScreen(type,id){
+ document.getElementById('bar').classList.add('hidden');
+ let o=getOrder(type,id);
+ if(!o||!o.items.length)return show(type==='table'?'tables':'delivery');
+ let sub=total(o),disc=+o.discount||0,fin=Math.max(0,sub-disc);
+ let h=`<div class="panel"><h2>Оплата — ${type==='table'?tableName(id):'Доставка'}</h2>`+
+  `<div class="sub"><span>Сумма</span><span>${money(sub)}</span></div>`+
+  (disc?`<div class="sub"><span>Скидка</span><span>−${money(disc)}</span></div>`:'')+
+  `<div class="tot"><b>К оплате: ${money(fin)}</b></div><label>Способ оплаты</label><div class="actions">`;
+ PAYS.forEach(p=>h+=`<button class="primary" onclick="closeOrder('${type}','${id}','${p}')">${p}</button>`);
+ h+=`</div><br><button onclick="orderScreen('${type}','${id}')">← Назад к заказу</button></div>`;
+ document.getElementById(type==='table'?'tables':'delivery').innerHTML=h;
+}
+function closeOrder(type,id,pay){
+ let o=getOrder(type,id);if(!o||!o.items.length)return;
+ let sub=total(o),disc=+o.discount||0;
+ let rec={num:db.counter++,type,id,label:type==='table'?tableName(id):'Доставка',items:o.items,subtotal:sub,discount:disc,total:Math.max(0,sub-disc),courier:type==='delivery'?(+o.courier||0):0,pay,time:new Date().toISOString()};
+ db.orders.push(rec);
+ if(type==='table')delete db.open[id];else delete db.delivery[id];
+ save();
+ printReceipt(rec,false);
+ show(type==='table'?'tables':'delivery');
+}
+
+/* ---------- ПЕЧАТЬ ---------- */
+function printBill(type,id){
+ let o=getOrder(type,id);
+ if(!o||!o.items.length)return show(type==='table'?'tables':'delivery');
+ let sub=total(o),disc=+o.discount||0;
+ printReceipt({num:'—',type,id,label:type==='table'?tableName(id):'Доставка',items:o.items,subtotal:sub,discount:disc,total:Math.max(0,sub-disc),pay:'',time:new Date().toISOString()},true);
+}
+function printReceipt(r,isBill){
+ let d=new Date(r.time);
+ let h=`<div class="c big">Центр плова</div>`+
+  `<div class="c">${isBill?'ПРЕДВАРИТЕЛЬНЫЙ СЧЁТ':'ЧЕК № '+r.num}</div><hr>`+
+  `<div class="r"><span>${esc(orderName(r))}</span><span>${d.toLocaleDateString('ru-RU')} ${d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span></div><hr>`;
+ r.items.forEach(x=>{
+  h+=`<div>${esc(x.name)}</div>`;
+  if(x.note)h+=`<div>  * ${esc(x.note)}</div>`;
+  h+=`<div class="r"><span>${money(x.price)} × ${x.qty}</span><span>${money(x.price*x.qty)}</span></div>`;
+ });
+ h+='<hr>';
+ if(r.discount){
+  h+=`<div class="r"><span>Сумма</span><span>${money(r.subtotal)}</span></div>`+
+     `<div class="r"><span>Скидка</span><span>-${money(r.discount)}</span></div>`;
+ }
+ h+=`<div class="r big"><span>ИТОГО</span><span>${money(r.total)}</span></div>`;
+ if(r.pay)h+=`<div class="r"><span>Оплата</span><span>${esc(r.pay)}</span></div>`;
+ h+=`<hr><div class="c">${esc(db.settings.footer||'')}</div>`;
+ document.getElementById('receipt').innerHTML=h;
+ window.print();
+}
+
+/* ---------- ДОСТАВКА ---------- */
+function newDelivery(){
+ let id='D'+Date.now();
+ db.delivery[id]={items:[],started:new Date().toISOString()};
+ save();orderScreen('delivery',id);
+}
+function renderDelivery(){
+ hideBar();
+ let h='<div class="panel"><button class="primary" onclick="newDelivery()">＋ Новый заказ доставки</button><h3>Открытые доставки</h3>';
+ let ids=Object.keys(db.delivery);
+ if(!ids.length)h+='<p class="muted">Нет открытых заказов.</p>';
+ ids.forEach(id=>h+=`<div class="row"><span>${esc(id)}<br><span class="small">${since(db.delivery[id].started)}</span></span><b>${money(total(db.delivery[id]))}</b><button onclick="orderScreen('delivery','${esc(id)}')">Открыть</button></div>`);
+ h+='</div>';
+ document.getElementById('delivery').innerHTML=h;
+}
+
+/* ---------- ИСТОРИЯ ---------- */
+// к какому виду относится заказ: сохранённое имя надёжнее настроек, они могли поменяться
+function orderKind(o){
+ if(o.type==='delivery')return'deliv';
+ return String(o.label||orderName(o)).startsWith('Улица')?'street':'hall';
+}
+const KINDS={hall:{t:'🏠 Зал',c:'b-hall'},street:{t:'☀️ Улица',c:'b-street'},deliv:{t:'🚚 Доставка',c:'b-deliv'}};
+function setHistFilter(f){histFilter=f;renderHistory()}
+function renderHistory(){
+ hideBar();
+ let f=histFilter;
+ let all=db.orders.map((o,i)=>({o,i,k:orderKind(o)}));
+ let cnt={all:all.length,hall:0,street:0,deliv:0};
+ all.forEach(x=>cnt[x.k]++);
+ // сортируем по времени, а не по порядку в базе — после импорта бэкапа он может не совпадать
+ let list=(f==='all'?all:all.filter(x=>x.k===f)).sort((a,b)=>new Date(b.o.time)-new Date(a.o.time));
+
+ let tabs=[['all','Все'],['hall','🏠 Зал'],['street','☀️ Улица'],['deliv','🚚 Доставка']];
+ let h='<div class="panel"><h2>История заказов</h2><div class="cats">'+
+  tabs.map(([k,t])=>`<button class="${f===k?'on':''}" onclick="setHistFilter('${k}')">${t} <span class="small">${cnt[k]}</span></button>`).join('')+
+  '</div>';
+
+ if(!db.orders.length){
+  h+='<p class="muted">История пока пустая.</p></div>';
+  document.getElementById('history').innerHTML=h;return;
+ }
+ if(!list.length)h+='<p class="muted">В этой категории заказов пока нет.</p>';
+
+ let sum=list.filter(x=>!x.o.void).reduce((s,x)=>s+x.o.total,0);
+ if(list.length)h+=`<div class="row"><span class="muted">Показано заказов: <b>${list.length}</b></span><b class="price">${money(sum)}</b></div>`;
+
+ let shown=list.slice(0,200),day='';
+ shown.forEach(({o,i,k})=>{
+  let d=new Date(o.time),ds=d.toDateString();
+  if(ds!==day){
+   day=ds;
+   let dayList=list.filter(x=>new Date(x.o.time).toDateString()===ds);
+   let dsum=dayList.filter(x=>!x.o.void).reduce((s,x)=>s+x.o.total,0);
+   let today=ds===new Date().toDateString();
+   h+=`<div class="sect">${today?'Сегодня':d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} <span class="small">${dayList.length} зак. · ${money(dsum)}</span></div>`;
+  }
+  let title=k==='deliv'?'Заказ №'+(o.num||'—'):esc(orderName(o))+' <span class="small">№'+(o.num||'—')+'</span>';
+  h+=`<div class="row" ${o.void?'style="opacity:.55"':''}><span><span class="badge ${KINDS[k].c}">${KINDS[k].t}</span> <b>${title}</b>${o.void?' <span class="badge b-void">✕ аннулирован</span>':''}<br><span class="small">${d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})} · ${o.items.length} поз. · ${esc(o.pay||'—')}${(+o.courier)?' · 🚴 −'+money(o.courier):''}</span></span><b style="${o.void?'text-decoration:line-through;color:#9ca3af':''}">${money(o.total)}</b><span class="actions"><button onclick="histDetails(${i})">Что заказали</button><button onclick="reprint(${i})">🖨</button></span></div>`;
+ });
+ if(list.length>200)h+='<p class="small muted">Показаны последние 200 заказов из '+list.length+'. Полный список — «⚙️ Данные» → выгрузка в CSV.</p>';
+ h+='</div>';
+ document.getElementById('history').innerHTML=h;
+}
+function histDetails(i){
+ let o=db.orders[i],d=new Date(o.time);
+ let h=`<div class="panel"><h2>Чек №${o.num||'—'} <span class="small">${esc(orderName(o))} · ${d.toLocaleString('ru-RU')}</span></h2>`;
+ if(o.void)h+=`<div class="warn" style="background:#fee2e2;border-color:#dc2626">✕ <b>Чек аннулирован</b> ${new Date(o.void.at).toLocaleString('ru-RU')}${o.void.reason?' · '+esc(o.void.reason):''}. В выручку не входит.</div>`;
+ o.items.forEach(x=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${x.qty}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b></div>`);
+ if(o.discount)h+=`<div class="sub"><span>Сумма</span><span>${money(o.subtotal)}</span></div><div class="sub"><span>Скидка</span><span>−${money(o.discount)}</span></div>`;
+ h+=`<div class="tot"><b>Итого: ${money(o.total)}</b> <span class="small">${esc(o.pay||'—')}</span></div>`;
+ if(+o.courier)h+=`<div class="sub"><span>🚴 Курьеру</span><span>−${money(o.courier)}</span></div>`;
+ let cost=orderCost(o);
+ if(cost)h+=`<div class="sub"><span>Себестоимость</span><span>−${money(cost)}</span></div><div class="sub"><span><b>Прибыль с заказа</b></span><span><b>${money(o.total-cost-(+o.courier||0))}</b></span></div>`;
+ h+=`<div class="actions"><button onclick="show('history')">← Назад</button><button class="blue" onclick="reprint(${i})">🖨 Перепечатать</button>`;
+ if(!o.void)h+=`<button onclick="restoreOrder(${i})">↩ Вернуть в работу</button><button class="danger" onclick="voidOrder(${i})">✕ Аннулировать чек</button>`;
+ h+='</div></div>';
+ document.getElementById('history').innerHTML=h;
+ document.getElementById('bar').classList.add('hidden');
+}
+// аннулирование: чек остаётся в истории с пометкой, но из выручки уходит
+function voidOrder(i){
+ let o=db.orders[i];
+ if(o.void)return;
+ let r=prompt('Причина аннулирования (ошибка кассира, отказ гостя и т.п.):','');
+ if(r===null)return;
+ if(!confirm('Аннулировать чек №'+(o.num||'')+' на '+money(o.total)+'?\n\nОн останется в истории с пометкой, но перестанет считаться в выручке.'))return;
+ o.void={at:new Date().toISOString(),reason:r.trim()};
+ save();histDetails(i);
+}
+// вернуть заказ в работу: позиции снова открыты, а старый чек аннулируется
+function restoreOrder(i){
+ let o=db.orders[i];
+ if(o.void)return;
+ if(o.type==='table'){
+  if(db.open[o.id])return alert(orderName(o)+' сейчас занят другим заказом. Сначала закройте или перенесите его.');
+  db.open[o.id]={items:JSON.parse(JSON.stringify(o.items)),discount:+o.discount||0,started:new Date().toISOString()};
+ }else{
+  let nid='D'+Date.now();
+  db.delivery[nid]={items:JSON.parse(JSON.stringify(o.items)),discount:+o.discount||0,courier:+o.courier||0,started:new Date().toISOString()};
+ }
+ o.void={at:new Date().toISOString(),reason:'возврат в работу'};
+ save();
+ alert('Заказ снова открыт. Чек №'+(o.num||'')+' аннулирован.');
+ show(o.type==='table'?'tables':'delivery');
+}
+// себестоимость заказа — по ценам, зафиксированным в момент продажи
+function orderCost(o){return (o.items||[]).reduce((s,x)=>s+(+x.cost||0)*x.qty,0)}
+// всё, что реально считается выручкой: без аннулированных
+function liveOrders(){return db.orders.filter(o=>!o.void)}
+function reprint(i){printReceipt(db.orders[i],false)}
+
+/* ---------- ОТЧЁТЫ ---------- */
+function renderReports(){
+ hideBar();
+ let today=new Date().toDateString();
+ let live=liveOrders();
+ let tod=live.filter(o=>new Date(o.time).toDateString()===today),sum=tod.reduce((s,o)=>s+o.total,0);
+ let week=live.filter(o=>(Date.now()-new Date(o.time))<7*864e5),ws=week.reduce((s,o)=>s+o.total,0);
+ let month=live.filter(o=>new Date(o.time).getMonth()===new Date().getMonth()&&new Date(o.time).getFullYear()===new Date().getFullYear()),ms=month.reduce((s,o)=>s+o.total,0);
+ let avg=tod.length?sum/tod.length:0;
+ let cour=tod.reduce((s,o)=>s+(+o.courier||0),0);
+ let cost=tod.reduce((s,o)=>s+orderCost(o),0);
+ let prof=sum-cost-cour;
+ let noCost=tod.some(o=>(o.items||[]).some(x=>!(+x.cost)));
+ let dayStart=new Date();dayStart.setHours(0,0,0,0);
+ let exD=opex(dayStart), wcD=wasteCost(dayStart);
+ let net=prof-exD-wcD;
+ let courW=week.reduce((s,o)=>s+(+o.courier||0),0);
+ let courM=month.reduce((s,o)=>s+(+o.courier||0),0);
+ let h='<div class="panel"><div class="row"><span><b>Смена открыта:</b> <span class="small">'+shiftFrom().toLocaleString('ru-RU')+'</span><br><span class="small">чеков за смену: '+shiftOrders().length+' · '+money(shiftOrders().reduce((a,o)=>a+o.total,0))+'</span></span>'+
+  '<button class="dark" onclick="shiftScreen()">🔒 Закрыть смену</button></div></div>'+
+  `<div class="grid">`+
+  `<div class="card"><span class="muted">Сегодня</span><div class="stat">${money(sum)}</div><small>${tod.length} заказов</small></div>`+
+  `<div class="card"><span class="muted">Средний чек сегодня</span><div class="stat">${money(avg)}</div></div>`+
+  (cour?`<div class="card"><span class="muted">🚴 Курьерам сегодня</span><div class="stat" style="color:#dc2626">−${money(cour)}</div><small>чистыми ${money(sum-cour)}</small></div>`:'')+
+  (cost?`<div class="card"><span class="muted">Прибыль с блюд</span><div class="stat" style="color:#15803d">${money(prof)}</div><small>${sum?Math.round(prof/sum*100):0}% от выручки</small></div>`:'')+
+  ((exD||wcD)?`<div class="card"><span class="muted">Чистыми за день</span><div class="stat" style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</div><small>после расходов и списаний</small></div>`:'')+
+  `<div class="card"><span class="muted">7 дней</span><div class="stat">${money(ws)}</div>${courW?`<small>чистыми ${money(ws-courW)}</small>`:''}</div>`+
+  `<div class="card"><span class="muted">Месяц</span><div class="stat">${money(ms)}</div>${courM?`<small>чистыми ${money(ms-courM)}</small>`:''}</div></div>`;
+ // откуда выручка сегодня
+ h+='<div class="panel"><h3>Откуда выручка сегодня</h3>';
+ if(!tod.length)h+='<p class="muted">Сегодня продаж ещё не было.</p>';
+ else ['hall','street','deliv'].forEach(k=>{
+  let g=tod.filter(o=>orderKind(o)===k),s=g.reduce((a,o)=>a+o.total,0);
+  let gc=g.reduce((a,o)=>a+(+o.courier||0),0);
+  h+=`<div class="row"><span><span class="badge ${KINDS[k].c}">${KINDS[k].t}</span> <span class="small">${g.length} зак.</span>${gc?`<br><span class="small">🚴 курьерам −${money(gc)} · чистыми ${money(s-gc)}</span>`:''}</span><b>${money(s)}</b>${sum?`<span class="small">${Math.round(s/sum*100)}%</span>`:''}</div>`;
+ });
+ h+='</div>';
+ // из чего складывается прибыль
+ if(tod.length){
+  h+='<div class="panel"><h3>Прибыль сегодня</h3>'+
+   `<div class="row"><span>Выручка</span><b>${money(sum)}</b></div>`+
+   `<div class="row"><span>Себестоимость блюд</span><b style="color:#dc2626">−${money(cost)}</b></div>`+
+   (cour?`<div class="row"><span>🚴 Оплата курьерам</span><b style="color:#dc2626">−${money(cour)}</b></div>`:'')+
+   `<div class="row"><span><b>Прибыль с блюд</b></span><b style="color:#15803d">${money(prof)}</b></div>`+
+   (exD?`<div class="row"><span>Расходы за день</span><b style="color:#dc2626">−${money(exD)}</b></div>`:'')+
+   (wcD?`<div class="row"><span>🗑 Списано блюд</span><b style="color:#dc2626">−${money(wcD)}</b></div>`:'')+
+   ((exD||wcD)?`<div class="row"><span><b>Чистая прибыль</b></span><b style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</b></div>`:'')+
+   (noCost?'<p class="small" style="color:#92400e">⚠️ У части проданных блюд не указана себестоимость — прибыль завышена. Заполните её в разделе «🍽️ Меню».</p>':'')+
+   '</div>';
+ }
+ // расходы по статьям за день
+ let dOps=cashOps(dayStart).filter(o=>o.dir==='out');
+ if(dOps.length){
+  let byCat={};
+  dOps.forEach(o=>byCat[o.cat]=(byCat[o.cat]||0)+o.sum);
+  h+='<div class="panel"><h3>Расходы сегодня по статьям</h3>';
+  Object.entries(byCat).sort((a,b)=>b[1]-a[1]).forEach(([c,v])=>
+   h+=`<div class="row"><span>${esc(c)}</span><b style="color:#dc2626">−${money(v)}</b></div>`);
+  h+=`<div class="row"><span class="muted">Всего</span><b>−${money(dOps.reduce((a,o)=>a+o.sum,0))}</b></div></div>`;
+ }
+ // списанные блюда за день
+ let dW=wasteOps(dayStart);
+ if(dW.length){
+  let byN={};
+  dW.forEach(o=>{byN[o.name]=byN[o.name]||{q:0,s:0};byN[o.name].q+=o.qty;byN[o.name].s+=(+o.cost||0)*o.qty});
+  h+='<div class="panel"><h3>🗑 Списано сегодня</h3>';
+  Object.entries(byN).sort((a,b)=>b[1].s-a[1].s).forEach(([n,v])=>
+   h+=`<div class="row"><span>${esc(n)} <span class="small">× ${v.q}</span></span><b style="color:#dc2626">−${money(v.s)}</b></div>`);
+  h+='</div>';
+ }
+ // способы оплаты за сегодня
+ h+='<div class="panel"><h3>Оплата сегодня</h3>';
+ PAYS.forEach(p=>{
+  let s=tod.filter(o=>o.pay===p).reduce((a,o)=>a+o.total,0);
+  if(s)h+=`<div class="row"><span>${p}</span><b>${money(s)}</b></div>`;
+ });
+ if(!tod.length)h+='<p class="muted">Сегодня продаж ещё не было.</p>';
+ h+='</div>';
+ // топ блюд за месяц
+ let cnt={};
+ month.forEach(o=>o.items.forEach(x=>{cnt[x.name]=cnt[x.name]||{q:0,s:0,p:0};cnt[x.name].q+=x.qty;cnt[x.name].s+=x.price*x.qty;cnt[x.name].p+=(x.price-(+x.cost||0))*x.qty}));
+ let top=Object.entries(cnt).sort((a,b)=>b[1].s-a[1].s).slice(0,10);
+ h+='<div class="panel"><h3>Топ блюд за месяц</h3>';
+ if(!top.length)h+='<p class="muted">Данных пока нет.</p>';
+ top.forEach(([n,v])=>h+=`<div class="row"><span>${esc(n)} <span class="small">× ${v.q}</span>${v.p!==v.s?`<br><span class="small">прибыль ${money(v.p)}</span>`:''}</span><b>${money(v.s)}</b></div>`);
+ h+='</div><div class="panel"><h3>По столам (всё время)</h3>';
+ let hall=+db.settings.hall||0,hallSum=0,strSum=0;
+ for(let i=1;i<=tables();i++){
+  let s=live.filter(o=>o.type==='table'&&o.id==i).reduce((a,o)=>a+o.total,0);
+  i>hall?strSum+=s:hallSum+=s;
+  h+=`<div class="row"><span>${tableName(i)}</span><b>${money(s)}</b></div>`;
+ }
+ if(hall&&tables()>hall)h+=`<div class="row"><span class="muted">Всего зал / улица</span><b>${money(hallSum)} / ${money(strSum)}</b></div>`;
+ let ds=live.filter(o=>o.type==='delivery').reduce((a,o)=>a+o.total,0);
+ h+=`<div class="row"><span>Доставка</span><b>${money(ds)}</b></div></div>`;
+ if(db.shifts.length){
+  h+='<div class="panel"><h3>Закрытые смены</h3>';
+  [...db.shifts].reverse().slice(0,10).forEach(r=>{
+   let diff=(r.fact===null||r.fact===undefined)?null:r.fact-r.must;
+   h+=`<div class="row"><span>Смена №${r.n} · ${new Date(r.to).toLocaleDateString('ru-RU')}<br><span class="small">${r.count} чек. · прибыль ${money(r.profit)}${diff?` · <b style="color:${diff<0?'#dc2626':'#92400e'}">${diff<0?'недостача':'излишек'} ${money(Math.abs(diff))}</b>`:''}</span></span><b>${money(r.sum)}</b></div>`;
+  });
+  h+='</div>';
+ }
+ document.getElementById('reports').innerHTML=h;
+}
+
+/* ---------- КАССА: ПРИХОД И РАСХОД ---------- */
+const OUT_CATS=['Продукты','Зарплата','Аренда','Свет','Вода','Газ','Отопление','Интернет','Телефон',
+ 'Хозтовары','Упаковка','Такси/доставка','Ремонт','Оборудование','Реклама','Налоги','Вывоз мусора','Инкассация','Прочее'];
+const IN_CATS=['Внесение в кассу','Возврат от поставщика','Прочее'];
+const WASTE_REASONS=['Испортилось','Не продали','Брак при готовке','Угостили гостя','Уронили/разбили','Ошибка заказа'];
+
+function cashOps(from){from=from||shiftFrom();return (db.cash||[]).filter(o=>new Date(o.time)>=from)}
+// сколько денег должно быть по каждому способу оплаты: продажи + внесения − расходы − выданное курьерам
+function balances(from){
+ from=from||shiftFrom();
+ let ops=cashOps(from), sales=liveOrders().filter(o=>new Date(o.time)>=from), r={};
+ PAYS.forEach(pm=>{
+  let sale=sales.filter(o=>o.pay===pm).reduce((a,o)=>a+o.total,0);
+  let inn=ops.filter(o=>o.dir==='in'&&o.pay===pm).reduce((a,o)=>a+o.sum,0);
+  let out=ops.filter(o=>o.dir==='out'&&o.pay===pm).reduce((a,o)=>a+o.sum,0);
+  let cour=pm==='Наличные'?sales.reduce((a,o)=>a+(+o.courier||0),0):0;
+  r[pm]={sale,inn,out,cour,bal:sale+inn-out-cour};
+ });
+ return r;
+}
+function opex(from){return cashOps(from).filter(o=>o.dir==='out'&&o.cat!=='Инкассация').reduce((a,o)=>a+o.sum,0)}
+// списание блюд: убыток считаем по себестоимости, а не по цене продажи
+function wasteOps(from){from=from||shiftFrom();return (db.waste||[]).filter(o=>new Date(o.time)>=from)}
+function wasteCost(from){return wasteOps(from).reduce((a,o)=>a+(+o.cost||0)*o.qty,0)}
+function addWaste(){
+ let mi=document.getElementById('wm').value;
+ let q=+document.getElementById('wq').value;
+ if(mi==='')return alert('Выберите блюдо.');
+ if(!(q>0))return alert('Укажите количество больше нуля.');
+ let m=db.menu[+mi];
+ db.waste.push({name:m.n,qty:q,cost:+m.k||0,price:+m.p||0,
+  reason:document.getElementById('wr').value,time:new Date().toISOString()});
+ save();renderCash();
+}
+function delWaste(i){
+ let o=db.waste[i];
+ if(!o||!confirm('Убрать списание «'+o.name+' × '+o.qty+'»?'))return;
+ db.waste.splice(i,1);save();renderCash();
+}
+let cashTab='ops', cashMonth=null, cashYear=null, sumPeriod='day', sumDay=null;
+function setCashTab(t){cashTab=t;renderCash()}
+function ym(d){d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function ymLabel(k){
+ let a=k.split('-');
+ return ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'][+a[1]-1]+' '+a[0];
+}
+// ежемесячные платежи вносятся сами, один раз в месяц
+function applyFixed(){
+ let now=new Date(), key=ym(now), added=0;
+ (db.fixed||[]).forEach(f=>{
+  let k=key+'|'+f.n;
+  if((db.cash||[]).some(o=>o.fkey===k))return;
+  if((db.fixedSkip||[]).indexOf(k)>=0)return;
+  let d=new Date(now.getFullYear(),now.getMonth(),1,9,0,0);
+  db.cash.push({dir:'out',cat:f.n,sum:+f.s||0,pay:f.pay||'Наличные',
+   note:'ежемесячный платёж',time:d.toISOString(),fkey:k});
+  added++;
+ });
+ if(added)save();
+ return added;
+}
+function renderCash(){
+ hideBar();
+ applyFixed();
+ let tabs=[['ops','💵 Операции'],['sum','📅 Итоги'],['fix','🔁 Постоянные']];
+ let h='<div class="cats">'+tabs.map(t=>`<button class="${cashTab===t[0]?'on':''}" onclick="setCashTab('${t[0]}')">${t[1]}</button>`).join('')+'</div>';
+ h+=({ops:viewCashOps,sum:viewCashSum,fix:viewCashFix})[cashTab]();
+ document.getElementById('cash').innerHTML=h;
+}
+
+/* --- вкладка: операции текущей смены --- */
+function viewCashOps(){
+ let from=shiftFrom(), b=balances(from), ops=cashOps(from);
+ let outSum=ops.filter(o=>o.dir==='out').reduce((a,o)=>a+o.sum,0);
+ let inSum=ops.filter(o=>o.dir==='in').reduce((a,o)=>a+o.sum,0);
+ let hints=[...new Set([...(db.cash||[]).map(o=>o.cat),...OUT_CATS,...IN_CATS])];
+ let h=`<div class="panel"><div class="row"><span><b>Смена с</b> <span class="small">${from.toLocaleString('ru-RU')}</span></span><button class="dark" onclick="shiftScreen()">🔒 Закрыть смену</button></div></div>`;
+ h+='<div class="sect first">💰 Сколько должно быть в кассе</div><div class="grid">';
+ let any=false;
+ PAYS.forEach(pm=>{
+  let v=b[pm];
+  if(!v.sale&&!v.inn&&!v.out)return;
+  any=true;
+  h+=`<div class="card"><span class="muted">${pm}</span><div class="stat">${money(v.bal)}</div>`+
+     `<span class="small">продажи ${money(v.sale)}${v.inn?' · +'+money(v.inn):''}${v.out?' · −'+money(v.out):''}${v.cour?' · курьерам −'+money(v.cour):''}</span></div>`;
+ });
+ h+='</div>';
+ if(!any)h+='<div class="panel"><p class="muted">За смену пока не было ни продаж, ни операций.</p></div>';
+ h+='<div class="sect">➕➖ Новая операция</div><div class="panel">'+
+  '<label>Что купили / за что платим</label><input id="cc" list="cathints" placeholder="например: мясо, лепёшки, мешки для мусора">'+
+  '<datalist id="cathints">'+hints.map(c=>`<option value="${esc(c)}">`).join('')+'</datalist>'+
+  '<label>Сумма ¥</label><input id="cs" type="number" inputmode="decimal" placeholder="0">'+
+  '<label>Откуда/куда деньги</label><select id="cp">'+PAYS.map(pm=>`<option>${esc(pm)}</option>`).join('')+'</select>'+
+  '<label>Комментарий <span class="small">необязательно</span></label><input id="cn" placeholder="у кого купили, на что пойдёт">'+
+  '<div class="actions"><button class="danger" onclick="addCashOp(&quot;out&quot;)">− Расход</button>'+
+  '<button class="primary" onclick="addCashOp(&quot;in&quot;)">+ Приход</button></div></div>';
+ let w=wasteOps(from), wc=wasteCost(from);
+ h+='<div class="sect">🗑 Списание блюд <span class="small">испортилось, не продали, брак</span></div><div class="panel">'+
+  '<label>Блюдо</label><select id="wm"><option value="">— выберите —</option>'+
+   db.menu.map((m,i)=>`<option value="${i}">${esc(m.n)}${m.k?' (себест. '+money(m.k)+')':' ⚠️ без себестоимости'}</option>`).join('')+'</select>'+
+  '<label>Сколько порций</label><input id="wq" type="number" inputmode="decimal" value="1" min="0">'+
+  '<label>Причина</label><select id="wr">'+WASTE_REASONS.map(r=>`<option>${esc(r)}</option>`).join('')+'</select>'+
+  '<button class="danger" onclick="addWaste()">🗑 Списать</button>';
+ if(w.length){
+  h+=`<hr><div class="row"><span class="muted">Списано за смену</span><b style="color:#dc2626">−${money(wc)}</b></div>`;
+  [...w].reverse().forEach(o=>{
+   let i=db.waste.indexOf(o);
+   h+=`<div class="row"><span><b>${esc(o.name)} × ${o.qty}</b><br><span class="small">${esc(o.reason)} · ${new Date(o.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}${o.cost?'':' · ⚠️ себестоимость не указана'}</span></span><b style="color:#dc2626">−${money((+o.cost||0)*o.qty)}</b><button class="danger" onclick="delWaste(${i})">✕</button></div>`;
+  });
+ }
+ h+='</div>';
+ h+=`<div class="sect">Операции за смену <span class="small">${ops.length?'приход +'+money(inSum)+' · расход −'+money(outSum):''}</span></div><div class="panel">`;
+ if(!ops.length)h+='<p class="muted">Операций пока нет.</p>';
+ [...ops].reverse().forEach(o=>h+=opRow(o));
+ h+='</div>';
+ return h;
+}
+function opRow(o){
+ let i=db.cash.indexOf(o);
+ return `<div class="row"><span><span class="badge ${o.dir==='in'?'b-hall':'b-void'}">${o.dir==='in'?'+ приход':'− расход'}</span> <b>${esc(o.cat)}</b>${o.fkey?' <span class="badge b-street">🔁 ежемесячный</span>':''}<br><span class="small">${new Date(o.time).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} · ${esc(o.pay)}${o.note?' · '+esc(o.note):''}</span></span>`+
+  `<b style="color:${o.dir==='in'?'#15803d':'#dc2626'}">${o.dir==='in'?'+':'−'}${money(o.sum)}</b>`+
+  `<span class="actions"><button onclick="editCashOp(${i})">✏️</button><button class="danger" onclick="delCashOp(${i})">✕</button></span></div>`;
+}
+function addCashOp(dir){
+ let cat=document.getElementById('cc').value.trim();
+ let sum=+document.getElementById('cs').value;
+ if(!cat)return alert('Напишите, что купили или за что платим.');
+ if(!(sum>0))return alert('Укажите сумму больше нуля.');
+ db.cash.push({dir:dir,cat:cat,sum:sum,pay:document.getElementById('cp').value,
+  note:document.getElementById('cn').value.trim(),time:new Date().toISOString()});
+ save();renderCash();
+}
+function editCashOp(i){
+ let o=db.cash[i];if(!o)return;
+ let c=prompt('Что купили / за что платим:',o.cat);if(c===null)return;
+ let sv=prompt('Сумма ¥:',o.sum);if(sv===null)return;
+ if(!(+sv>0))return alert('Сумма должна быть больше нуля.');
+ o.cat=c.trim()||o.cat;o.sum=+sv;
+ save();renderCash();
+}
+function delCashOp(i){
+ let o=db.cash[i];
+ if(!o||!confirm('Удалить операцию «'+o.cat+'» на '+money(o.sum)+'?'))return;
+ if(o.fkey){db.fixedSkip=db.fixedSkip||[];db.fixedSkip.push(o.fkey)}
+ db.cash.splice(i,1);save();renderCash();
+}
+
+/* --- вкладка: итоги за месяц и год --- */
+// архив: каждый день, по которому есть данные, с итогом — история хранится вечно
+function allDays(){
+ let keys=[...new Set([...(db.cash||[]).map(o=>dayKey(o.time)),
+  ...liveOrders().map(o=>dayKey(o.time)),...(db.waste||[]).map(o=>dayKey(o.time))])].sort().reverse();
+ return keys.map(k=>{
+  let sales=liveOrders().filter(o=>dayKey(o.time)===k);
+  let ops=(db.cash||[]).filter(o=>dayKey(o.time)===k);
+  let waste=(db.waste||[]).filter(o=>dayKey(o.time)===k);
+  let rev=sales.reduce((a,o)=>a+o.total,0);
+  let cost=sales.reduce((a,o)=>a+orderCost(o),0);
+  let cour=sales.reduce((a,o)=>a+(+o.courier||0),0);
+  let out=ops.filter(o=>o.dir==='out'&&o.cat!=='Инкассация').reduce((a,o)=>a+o.sum,0);
+  let wc=waste.reduce((a,o)=>a+(+o.cost||0)*o.qty,0);
+  return {k,rev,exp:out,orders:sales.length,net:rev-cost-cour-out-wc};
+ });
+}
+function dayLabel(k){
+ let today=dayKey(new Date()), yest=dayKey(new Date(Date.now()-864e5));
+ if(k===today)return 'Сегодня';
+ if(k===yest)return 'Вчера';
+ return new Date(k).toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'short'});
+}
+function openDay(k){sumPeriod='day';sumDay=k;cashTab='sum';renderCash();window.scrollTo(0,0)}
+function dayArchive(limit){
+ let days=allDays();
+ if(!days.length)return '<div class="panel"><p class="muted">Пока нет ни одного дня с данными.</p></div>';
+ let h='<div class="panel">';
+ days.slice(0,limit||60).forEach(d=>{
+  h+=`<div class="row" style="cursor:pointer" onclick="openDay('${d.k}')"><span><b>${dayLabel(d.k)}</b><br><span class="small">${d.orders} зак. · выручка ${money(d.rev)}${d.exp?' · расходы '+money(d.exp):''}</span></span><b style="color:${d.net<0?'#dc2626':'#15803d'}">${money(d.net)}</b><button onclick="event.stopPropagation();openDay('${d.k}')">Открыть</button></div>`;
+ });
+ if(days.length>(limit||60))h+=`<p class="small muted">Показаны последние ${limit||60} дней из ${days.length}.</p>`;
+ return h+'</div>';
+}
+function viewCashSum(){
+ let tabs=[['day','За день'],['month','За месяц'],['year','За год']];
+ let h='<div class="panel"><div class="cats" style="margin:0">'+
+  tabs.map(t=>`<button class="${sumPeriod===t[0]?'on':''}" onclick="sumPeriod='${t[0]}';renderCash()">${t[1]}</button>`).join('')+
+  '</div></div>';
+ return h+({day:viewSumDay,month:viewSumMonth,year:viewSumYear})[sumPeriod]();
+}
+function dayKey(d){d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+// сводка по любому набору продаж и операций — общая часть для дня и месяца
+function periodBlocks(sales,ops,waste,title){
+ let rev=sales.reduce((a,o)=>a+o.total,0);
+ let cost=sales.reduce((a,o)=>a+orderCost(o),0);
+ let cour=sales.reduce((a,o)=>a+(+o.courier||0),0);
+ let out=ops.filter(o=>o.dir==='out'), inn=ops.filter(o=>o.dir==='in');
+ let outSum=out.reduce((a,o)=>a+o.sum,0), inSum=inn.reduce((a,o)=>a+o.sum,0);
+ let realOut=out.filter(o=>o.cat!=='Инкассация').reduce((a,o)=>a+o.sum,0);
+ let wc=waste.reduce((a,o)=>a+(+o.cost||0)*o.qty,0);
+ let net=rev-cost-cour-realOut-wc;
+ let gross=rev-cost-cour;                       // заработок на самих блюдах, до расходов кафе
+ let noCost=sales.some(o=>(o.items||[]).some(x=>!(+x.cost)));
+ let h='<div class="grid">'+
+  `<div class="card"><span class="muted">Выручка</span><div class="stat">${money(rev)}</div><small>${sales.length} заказов</small></div>`+
+  (sales.length?`<div class="card"><span class="muted">Прибыль с блюд</span><div class="stat" style="color:#15803d">${money(gross)}</div><small>${noCost?'⚠️ себестоимость не у всех':(rev?Math.round(gross/rev*100)+'% от выручки':'')}</small></div>`:'')+
+  `<div class="card"><span class="muted">Расходы</span><div class="stat" style="color:#dc2626">−${money(outSum)}</div><small>${out.length} операций</small></div>`+
+  (inSum?`<div class="card"><span class="muted">Приходы</span><div class="stat" style="color:#15803d">+${money(inSum)}</div></div>`:'')+
+  `<div class="card"><span class="muted">Чистая прибыль</span><div class="stat" style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</div><small>после всех расходов</small></div></div>`;
+ // расшифровка
+ if(rev||outSum||wc){
+  h+='<div class="panel"><h3>Из чего сложилось</h3>'+
+   `<div class="row"><span>Выручка</span><b>${money(rev)}</b></div>`+
+   (cost?`<div class="row"><span>Себестоимость блюд</span><b style="color:#dc2626">−${money(cost)}</b></div>`:'')+
+   (cour?`<div class="row"><span>🚴 Курьерам</span><b style="color:#dc2626">−${money(cour)}</b></div>`:'')+
+   (sales.length?`<div class="row"><span><b>Прибыль с блюд</b></span><b style="color:#15803d">${money(gross)}</b></div>`:'')+
+   (realOut?`<div class="row"><span>Расходы и покупки</span><b style="color:#dc2626">−${money(realOut)}</b></div>`:'')+
+   (wc?`<div class="row"><span>🗑 Списано блюд</span><b style="color:#dc2626">−${money(wc)}</b></div>`:'')+
+   `<div class="row"><span><b>Чистая прибыль</b></span><b style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</b></div>`;
+  if(outSum!==realOut)h+='<p class="small muted">Инкассация в расходы не входит — это перемещение денег, а не трата.</p>';
+  if(noCost&&sales.length)h+='<p class="small" style="color:#92400e">⚠️ У части проданных блюд не указана себестоимость — прибыль с блюд завышена. Заполните её в разделе «🍽️ Меню».</p>';
+  h+='</div>';
+ }
+ // выручка по способам оплаты
+ if(sales.length){
+  h+='<div class="panel"><h3>Выручка по оплате</h3>';
+  PAYS.forEach(pm=>{
+   let v=sales.filter(o=>o.pay===pm).reduce((a,o)=>a+o.total,0);
+   if(v)h+=`<div class="row"><span>${pm}</span><b>${money(v)}</b><span class="small">${rev?Math.round(v/rev*100):0}%</span></div>`;
+  });
+  h+='</div>';
+ }
+ // на что потрачено
+ let byCat={};
+ out.forEach(o=>byCat[o.cat]=(byCat[o.cat]||0)+o.sum);
+ h+=`<div class="sect">На что потрачено ${title}</div><div class="panel">`;
+ if(!out.length)h+='<p class="muted">Расходов не было.</p>';
+ Object.entries(byCat).sort((a,b)=>b[1]-a[1]).forEach(e=>
+  h+=`<div class="row"><span>${esc(e[0])}</span><b style="color:#dc2626">−${money(e[1])}</b><span class="small">${outSum?Math.round(e[1]/outSum*100):0}%</span></div>`);
+ if(out.length)h+=`<div class="row"><span><b>Всего</b></span><b>−${money(outSum)}</b></div>`;
+ h+='</div>';
+ // что и когда куплено
+ h+='<div class="sect">Что и когда куплено</div><div class="panel">';
+ if(!ops.length)h+='<p class="muted">Операций нет.</p>';
+ [...ops].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,200).forEach(o=>h+=opRow(o));
+ h+='</div>';
+ // списания
+ if(waste.length){
+  let byN={};
+  waste.forEach(o=>{byN[o.name]=byN[o.name]||{q:0,s:0};byN[o.name].q+=o.qty;byN[o.name].s+=(+o.cost||0)*o.qty});
+  h+='<div class="sect">🗑 Списано</div><div class="panel">';
+  Object.entries(byN).sort((a,b)=>b[1].s-a[1].s).forEach(e=>
+   h+=`<div class="row"><span>${esc(e[0])} <span class="small">× ${e[1].q}</span></span><b style="color:#dc2626">−${money(e[1].s)}</b></div>`);
+  h+=`<div class="row"><span><b>Всего</b></span><b style="color:#dc2626">−${money(wc)}</b></div></div>`;
+ }
+ return h;
+}
+/* --- итоги за день --- */
+function viewSumDay(){
+ if(!sumDay)sumDay=dayKey(new Date());
+ let today=dayKey(new Date());
+ let yest=dayKey(new Date(Date.now()-864e5));
+ let label=sumDay===today?'сегодня':sumDay===yest?'вчера':new Date(sumDay).toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+ let h='<div class="panel"><label>Дата</label><input type="date" value="'+sumDay+'" max="'+today+'" onchange="sumDay=this.value;renderCash()">'+
+  '<div class="actions"><button class="'+(sumDay===today?'dark':'')+'" onclick="sumDay=\''+today+'\';renderCash()">Сегодня</button>'+
+  '<button class="'+(sumDay===yest?'dark':'')+'" onclick="sumDay=\''+yest+'\';renderCash()">Вчера</button></div></div>';
+ let sales=liveOrders().filter(o=>dayKey(o.time)===sumDay);
+ let ops=(db.cash||[]).filter(o=>dayKey(o.time)===sumDay);
+ let waste=(db.waste||[]).filter(o=>dayKey(o.time)===sumDay);
+ h+=`<div class="sect first">Итоги за ${label}</div>`;
+ h+=periodBlocks(sales,ops,waste,'за '+label);
+ h+='<div class="sect">📆 История по дням <span class="small">нажмите на день, чтобы открыть его итоги</span></div>';
+ h+=dayArchive(60);
+ return h;
+}
+/* --- итоги за месяц --- */
+function viewSumMonth(){
+ let months=[...new Set([...(db.cash||[]).map(o=>ym(o.time)),...liveOrders().map(o=>ym(o.time))])].sort().reverse();
+ let cur=ym(new Date());
+ if(months.indexOf(cur)<0)months.unshift(cur);
+ if(!cashMonth||months.indexOf(cashMonth)<0)cashMonth=cur;
+ let h='<div class="panel"><label>Месяц</label><select onchange="cashMonth=this.value;renderCash()">'+
+  months.map(m=>`<option value="${m}" ${m===cashMonth?'selected':''}>${ymLabel(m)}</option>`).join('')+'</select></div>';
+ let sales=liveOrders().filter(o=>ym(o.time)===cashMonth);
+ let ops=(db.cash||[]).filter(o=>ym(o.time)===cashMonth);
+ let waste=(db.waste||[]).filter(o=>ym(o.time)===cashMonth);
+ h+=`<div class="sect first">Итоги за ${ymLabel(cashMonth)}</div>`;
+ h+=periodBlocks(sales,ops,waste,'— '+ymLabel(cashMonth));
+ // по дням месяца
+ let byD={};
+ sales.forEach(o=>{let k=dayKey(o.time);byD[k]=byD[k]||{r:0,e:0};byD[k].r+=o.total});
+ ops.filter(o=>o.dir==='out').forEach(o=>{let k=dayKey(o.time);byD[k]=byD[k]||{r:0,e:0};byD[k].e+=o.sum});
+ let days=Object.keys(byD).sort().reverse();
+ if(days.length){
+  h+='<div class="panel"><h3>По дням</h3>';
+  days.forEach(k=>h+=`<div class="row" style="cursor:pointer" onclick="openDay('${k}')"><span>${new Date(k).toLocaleDateString('ru-RU',{day:'numeric',month:'short',weekday:'short'})}</span><b>${money(byD[k].r)}</b>${byD[k].e?`<b style="color:#dc2626">−${money(byD[k].e)}</b>`:'<span class="small">—</span>'}<button onclick="event.stopPropagation();openDay('${k}')">Открыть</button></div>`);
+  h+='</div>';
+ }
+ return h;
+}
+/* --- итоги за год --- */
+function viewSumYear(){
+ let years=[...new Set([...(db.cash||[]).map(o=>ym(o.time).split('-')[0]),...liveOrders().map(o=>ym(o.time).split('-')[0])])].sort().reverse();
+ let cur=String(new Date().getFullYear());
+ if(years.indexOf(cur)<0)years.unshift(cur);
+ if(!cashYear||years.indexOf(cashYear)<0)cashYear=cur;
+ let h='<div class="panel"><label>Год</label><select onchange="cashYear=this.value;renderCash()">'+
+  years.map(y=>`<option ${y===cashYear?'selected':''}>${y}</option>`).join('')+'</select></div>';
+ let sales=liveOrders().filter(o=>ym(o.time).indexOf(cashYear)===0);
+ let ops=(db.cash||[]).filter(o=>ym(o.time).indexOf(cashYear)===0);
+ let waste=(db.waste||[]).filter(o=>ym(o.time).indexOf(cashYear)===0);
+ let rev=sales.reduce((a,o)=>a+o.total,0);
+ let out=ops.filter(o=>o.dir==='out'), outSum=out.reduce((a,o)=>a+o.sum,0);
+ let realOut=out.filter(o=>o.cat!=='Инкассация').reduce((a,o)=>a+o.sum,0);
+ let cost=sales.reduce((a,o)=>a+orderCost(o),0);
+ let cour=sales.reduce((a,o)=>a+(+o.courier||0),0);
+ let wc=waste.reduce((a,o)=>a+(+o.cost||0)*o.qty,0);
+ let net=rev-cost-cour-realOut-wc;
+ let gross=rev-cost-cour;
+ let noCost=sales.some(o=>(o.items||[]).some(x=>!(+x.cost)));
+ h+=`<div class="sect first">Итоги за ${cashYear} год</div><div class="grid">`+
+  `<div class="card"><span class="muted">Выручка за год</span><div class="stat">${money(rev)}</div><small>${sales.length} заказов</small></div>`+
+  (sales.length?`<div class="card"><span class="muted">Прибыль с блюд</span><div class="stat" style="color:#15803d">${money(gross)}</div><small>${noCost?'⚠️ себестоимость не у всех':(rev?Math.round(gross/rev*100)+'% от выручки':'')}</small></div>`:'')+
+  `<div class="card"><span class="muted">Расходы за год</span><div class="stat" style="color:#dc2626">−${money(outSum)}</div></div>`+
+  `<div class="card"><span class="muted">Чистая прибыль</span><div class="stat" style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</div></div></div>`;
+ if(rev||outSum){
+  h+='<div class="panel"><h3>Из чего сложилось за год</h3>'+
+   `<div class="row"><span>Выручка</span><b>${money(rev)}</b></div>`+
+   (cost?`<div class="row"><span>Себестоимость блюд</span><b style="color:#dc2626">−${money(cost)}</b></div>`:'')+
+   (cour?`<div class="row"><span>🚴 Курьерам</span><b style="color:#dc2626">−${money(cour)}</b></div>`:'')+
+   (sales.length?`<div class="row"><span><b>Прибыль с блюд</b></span><b style="color:#15803d">${money(gross)}</b></div>`:'')+
+   (realOut?`<div class="row"><span>Расходы и покупки</span><b style="color:#dc2626">−${money(realOut)}</b></div>`:'')+
+   (wc?`<div class="row"><span>🗑 Списано блюд</span><b style="color:#dc2626">−${money(wc)}</b></div>`:'')+
+   `<div class="row"><span><b>Чистая прибыль</b></span><b style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</b></div>`+
+   (noCost&&sales.length?'<p class="small" style="color:#92400e">⚠️ У части проданных блюд не указана себестоимость — прибыль с блюд завышена.</p>':'')+
+   '</div>';
+ }
+ // по месяцам
+ let byM={};
+ sales.forEach(o=>{let k=ym(o.time);byM[k]=byM[k]||{r:0,e:0};byM[k].r+=o.total});
+ out.forEach(o=>{let k=ym(o.time);byM[k]=byM[k]||{r:0,e:0};byM[k].e+=o.sum});
+ let keys=Object.keys(byM).sort().reverse();
+ h+='<div class="panel"><h3>По месяцам</h3>';
+ if(!keys.length)h+='<p class="muted">Данных за год нет.</p>';
+ keys.forEach(k=>{
+  let d=byM[k].r-byM[k].e;
+  h+=`<div class="row"><span>${ymLabel(k)}<br><span class="small">выручка ${money(byM[k].r)} · расходы ${money(byM[k].e)}</span></span><b style="color:${d<0?'#dc2626':'#15803d'}">${money(d)}</b></div>`;
+ });
+ h+='</div>';
+ // статьи за год
+ let yCat={};
+ out.forEach(o=>yCat[o.cat]=(yCat[o.cat]||0)+o.sum);
+ if(Object.keys(yCat).length){
+  h+='<div class="panel"><h3>На что потрачено за год</h3>';
+  Object.entries(yCat).sort((a,b)=>b[1]-a[1]).forEach(e=>
+   h+=`<div class="row"><span>${esc(e[0])}</span><b style="color:#dc2626">−${money(e[1])}</b><span class="small">${outSum?Math.round(e[1]/outSum*100):0}%</span></div>`);
+  h+=`<div class="row"><span><b>Всего за год</b></span><b>−${money(outSum)}</b></div></div>`;
+ }
+ return h;
+}
+
+/* --- вкладка: постоянные ежемесячные платежи --- */
+function viewCashFix(){
+ let cur=ym(new Date());
+ let tot=(db.fixed||[]).reduce((a,f)=>a+(+f.s||0),0);
+ let h='<div class="panel"><h2>🔁 Ежемесячные платежи</h2>'+
+  '<p class="small">Вносятся автоматически первого числа каждого месяца и попадают в расходы. Сумму можно поправить — например, если свет вышел дороже.</p>';
+ if(!(db.fixed||[]).length)h+='<p class="muted">Постоянных платежей нет.</p>';
+ (db.fixed||[]).forEach((f,i)=>{
+  let done=(db.cash||[]).some(o=>o.fkey===cur+'|'+f.n);
+  h+=`<div class="row"><span><b>${esc(f.n)}</b><br><span class="small">${esc(f.pay||'Наличные')} · ${done?'✅ внесён за '+ymLabel(cur):'⏳ ещё не внесён'}</span></span><b>${money(f.s)}</b><span class="actions"><button onclick="editFixed(${i})">✏️</button><button class="danger" onclick="delFixed(${i})">✕</button></span></div>`;
+ });
+ h+=`<div class="row"><span><b>Итого в месяц</b></span><b>${money(tot)}</b></div>`;
+ h+=`<div class="row"><span class="muted">В год</span><b>${money(tot*12)}</b></div>`;
+ h+='<hr><label>Название платежа</label><input id="fn" placeholder="например: Вода">'+
+  '<label>Сумма ¥ в месяц</label><input id="fs" type="number" inputmode="decimal" placeholder="0">'+
+  '<label>Чем платим</label><select id="fp">'+PAYS.map(pm=>`<option>${esc(pm)}</option>`).join('')+'</select>'+
+  '<button class="primary" onclick="addFixed()">Добавить платёж</button></div>';
+ return h;
+}
+function addFixed(){
+ let n=document.getElementById('fn').value.trim(), s=+document.getElementById('fs').value;
+ if(!n)return alert('Укажите название платежа.');
+ if(!(s>0))return alert('Укажите сумму больше нуля.');
+ db.fixed=db.fixed||[];
+ db.fixed.push({n:n,s:s,pay:document.getElementById('fp').value});
+ save();renderCash();
+}
+function editFixed(i){
+ let f=db.fixed[i];if(!f)return;
+ let n=prompt('Название платежа:',f.n);if(n===null)return;
+ let s=prompt('Сумма ¥ в месяц:',f.s);if(s===null)return;
+ if(!(+s>0))return alert('Сумма должна быть больше нуля.');
+ let old=f.n, cur=ym(new Date());
+ f.n=n.trim()||f.n;f.s=+s;
+ let op=(db.cash||[]).find(o=>o.fkey===cur+'|'+old);
+ if(op&&confirm('Обновить и уже внесённый платёж за '+ymLabel(cur)+'?')){
+  op.cat=f.n;op.sum=f.s;op.fkey=cur+'|'+f.n;
+ }
+ save();renderCash();
+}
+function delFixed(i){
+ let f=db.fixed[i];
+ if(!f||!confirm('Убрать «'+f.n+'» из ежемесячных платежей? Уже внесённые операции останутся.'))return;
+ db.fixed.splice(i,1);save();renderCash();
+}
+/* ---------- СМЕНА ---------- */
+// смена идёт с момента прошлого закрытия; если его не было — с начала сегодняшнего дня
+function shiftFrom(){
+ if(db.shiftStart)return new Date(db.shiftStart);
+ let d=new Date();d.setHours(0,0,0,0);return d;
+}
+function shiftOrders(){
+ let f=shiftFrom();
+ return liveOrders().filter(o=>new Date(o.time)>=f);
+}
+function shiftScreen(){
+ document.getElementById('bar').classList.add('hidden');
+ let list=shiftOrders(),from=shiftFrom();
+ let sum=list.reduce((a,o)=>a+o.total,0);
+ let cour=list.reduce((a,o)=>a+(+o.courier||0),0);
+ let cost=list.reduce((a,o)=>a+orderCost(o),0);
+ let cash=list.filter(o=>o.pay==='Наличные').reduce((a,o)=>a+o.total,0);
+ let openLeft=Object.keys(db.open).length+Object.keys(db.delivery).length;
+ let h=`<div class="panel"><h2>Закрытие смены</h2>`+
+  `<p class="small">С ${from.toLocaleString('ru-RU')} по ${new Date().toLocaleString('ru-RU')}</p>`;
+ if(openLeft)h+=`<div class="warn">⚠️ Есть незакрытые заказы: <b>${openLeft}</b>. Они не попадут в эту смену — сначала рассчитайте гостей.</div>`;
+ let ex=opex(from), wc=wasteCost(from), bal=balances(from), mustCash=bal['Наличные'].bal;
+ h+=`<div class="row"><span>Чеков за смену</span><b>${list.length}</b></div>`+
+  `<div class="row"><span>Выручка</span><b>${money(sum)}</b></div>`;
+ PAYS.forEach(pm=>{
+  let v=list.filter(o=>o.pay===pm).reduce((a,o)=>a+o.total,0);
+  if(v)h+=`<div class="row"><span class="small">— ${pm}</span><span>${money(v)}</span></div>`;
+ });
+ if(cost)h+=`<div class="row"><span>Себестоимость</span><b style="color:#dc2626">−${money(cost)}</b></div>`;
+ if(cour)h+=`<div class="row"><span>🚴 Выдано курьерам</span><b style="color:#dc2626">−${money(cour)}</b></div>`;
+ if(ex)h+=`<div class="row"><span>Расходы за смену</span><b style="color:#dc2626">−${money(ex)}</b></div>`;
+ if(wc)h+=`<div class="row"><span>🗑 Списано блюд</span><b style="color:#dc2626">−${money(wc)}</b></div>`;
+ h+=`<div class="row"><span><b>Прибыль за смену</b></span><b style="color:#15803d">${money(sum-cost-cour-ex-wc)}</b></div>`;
+ h+='<div class="sect">Сколько должно быть по кассе</div>';
+ PAYS.forEach(pm=>{
+  let v=bal[pm];
+  if(!v.sale&&!v.inn&&!v.out)return;
+  h+=`<div class="row"><span>${pm}</span><b>${money(v.bal)}</b></div>`;
+ });
+ h+=`<div class="tot"><b>Наличными должно быть: ${money(mustCash)}</b></div>`+
+  `<p class="small">Наличная выручка ${money(cash)}${bal['Наличные'].inn?' + внесения '+money(bal['Наличные'].inn):''}${bal['Наличные'].out?' − расходы наличными '+money(bal['Наличные'].out):''}${cour?' − курьерам '+money(cour):''}.</p>`+
+  `<label>Фактически в кассе, ¥ <span class="small">пересчитайте деньги (можно пропустить)</span></label><input id="fact" type="number" inputmode="decimal" placeholder="${mustCash.toFixed(2)}">`+
+  `<div class="actions"><button onclick="show('reports')">← Отмена</button><button class="primary" onclick="closeShift()">🔒 Закрыть смену и напечатать</button></div></div>`;
+ document.getElementById('reports').innerHTML=h;
+}
+function closeShift(){
+ let list=shiftOrders(),from=shiftFrom();
+ let sum=list.reduce((a,o)=>a+o.total,0);
+ let cour=list.reduce((a,o)=>a+(+o.courier||0),0);
+ let cost=list.reduce((a,o)=>a+orderCost(o),0);
+ let cash=list.filter(o=>o.pay==='Наличные').reduce((a,o)=>a+o.total,0);
+ let ex=opex(from), wc=wasteCost(from), bal=balances(from), ops=cashOps(from);
+ let fv=document.getElementById('fact').value;
+ let fact=fv===''?null:+fv;
+ let must=bal['Наличные'].bal;
+ if(!list.length&&!confirm('За смену не было ни одного чека. Всё равно закрыть смену?'))return;
+ if(!confirm('Закрыть смену?\n\nВыручка '+money(sum)+', чеков '+list.length+'.\nПосле закрытия начнётся новая смена.'))return;
+ let rec={n:(db.shifts.length+1),from:from.toISOString(),to:new Date().toISOString(),
+  count:list.length,sum,cost,courier:cour,expenses:ex,waste:wc,profit:sum-cost-cour-ex-wc,cash,must,fact,
+  bal:PAYS.map(pm=>[pm,bal[pm].bal]).filter(x=>x[1]),
+  ops:ops.map(o=>({dir:o.dir,cat:o.cat,sum:o.sum,pay:o.pay})),
+  pays:PAYS.map(pm=>[pm,list.filter(o=>o.pay===pm).reduce((a,o)=>a+o.total,0)]).filter(x=>x[1])};
+ db.shifts.push(rec);
+ db.shiftStart=new Date().toISOString();
+ save();
+ printShift(rec);
+ show('reports');
+}
+function printShift(r){
+ let f=new Date(r.from),t=new Date(r.to);
+ let h='<div class="c big">Центр плова</div><div class="c">ОТЧЁТ О СМЕНЕ №'+r.n+'</div><hr>'+
+  `<div>Открыта: ${f.toLocaleString('ru-RU')}</div><div>Закрыта: ${t.toLocaleString('ru-RU')}</div><hr>`+
+  `<div class="r"><span>Чеков</span><span>${r.count}</span></div>`+
+  `<div class="r"><span>Выручка</span><span>${money(r.sum)}</span></div>`;
+ r.pays.forEach(([pm,v])=>h+=`<div class="r"><span>  ${pm}</span><span>${money(v)}</span></div>`);
+ if(r.cost)h+=`<div class="r"><span>Себестоимость</span><span>-${money(r.cost)}</span></div>`;
+ if(r.courier)h+=`<div class="r"><span>Курьерам</span><span>-${money(r.courier)}</span></div>`;
+ if(r.expenses)h+=`<div class="r"><span>Расходы</span><span>-${money(r.expenses)}</span></div>`;
+ if(r.waste)h+=`<div class="r"><span>Списано блюд</span><span>-${money(r.waste)}</span></div>`;
+ (r.ops||[]).forEach(o=>h+=`<div class="r"><span>  ${o.dir==='in'?'+':'-'} ${o.cat}</span><span>${money(o.sum)}</span></div>`);
+ h+=`<div class="r big"><span>ПРИБЫЛЬ</span><span>${money(r.profit)}</span></div><hr>`;
+ (r.bal||[]).forEach(([pm,v])=>h+=`<div class="r"><span>${pm}</span><span>${money(v)}</span></div>`);
+ h+=`<div class="r"><span>Наличных должно быть</span><span>${money(r.must)}</span></div>`;
+ if(r.fact!==null&&r.fact!==undefined){
+  let diff=r.fact-r.must;
+  h+=`<div class="r"><span>Фактически</span><span>${money(r.fact)}</span></div>`+
+     `<div class="r big"><span>${diff<0?'НЕДОСТАЧА':diff>0?'ИЗЛИШЕК':'СХОДИТСЯ'}</span><span>${diff?money(Math.abs(diff)):''}</span></div>`;
+ }
+ h+='<hr><div class="c">Кассир: ____________</div>';
+ document.getElementById('receipt').innerHTML=h;
+ window.print();
+}
+/* ---------- МЕНЮ ---------- */
+// себестоимость пишется в чек в момент продажи; если её внесли в меню позже,
+// старые чеки остаются с нулём — эта функция проставляет её задним числом
+function costMap(){let m={};db.menu.forEach(x=>{if(+x.k)m[x.n]=+x.k});return m}
+function missingCost(){
+ let m=costMap(), can=0, no=0;
+ let scan=items=>(items||[]).forEach(x=>{if(+x.cost)return;m[x.name]?can++:no++});
+ db.orders.forEach(o=>scan(o.items));
+ Object.values(db.open).forEach(o=>scan(o.items));
+ Object.values(db.delivery).forEach(o=>scan(o.items));
+ (db.waste||[]).forEach(w=>{if(+w.cost)return;m[w.name]?can++:no++});
+ return {can,no};
+}
+function recalcCosts(){
+ let m=costMap(), fixed=0;
+ let fix=items=>(items||[]).forEach(x=>{if(!(+x.cost)&&m[x.name]){x.cost=m[x.name];fixed++}});
+ db.orders.forEach(o=>fix(o.items));
+ Object.values(db.open).forEach(o=>fix(o.items));
+ Object.values(db.delivery).forEach(o=>fix(o.items));
+ (db.waste||[]).forEach(w=>{if(!(+w.cost)&&m[w.name]){w.cost=m[w.name];fixed++}});
+ save();
+ let left=missingCost().no;
+ alert('Готово. Себестоимость проставлена в '+fixed+' позициях.'+
+  (left?'\n\nОсталось без себестоимости: '+left+'. У этих блюд она не заполнена в меню.':''));
+ renderMenu();
+}
+function renderMenu(){
+ hideBar();
+ let cats=[...new Set(db.menu.map(m=>m.c||'Прочее'))];
+ let miss=missingCost();
+ let h='';
+ if(miss.can)h+=`<div class="warn">⚠️ В уже пробитых чеках у <b>${miss.can}</b> позиций себестоимость не проставлена — они были проданы до того, как вы её заполнили. Из-за этого прибыль за те дни завышена.<br><button class="primary" style="margin-top:8px" onclick="recalcCosts()">Проставить себестоимость в прошлых заказах</button></div>`;
+ h+='<div class="panel"><h2>Управление меню</h2>'+
+  '<label>Название блюда</label><input id="mn" placeholder="Например: Плов">'+
+  '<label>Цена продажи ¥</label><input id="mp" type="number" inputmode="decimal" placeholder="40">'+
+  '<label>Себестоимость ¥ <span class="small">во сколько блюдо обходится кафе</span></label><input id="mk" type="number" inputmode="decimal" placeholder="0">'+
+  '<label>Категория</label><input id="mc" list="catlist" placeholder="Основные">'+
+  '<datalist id="catlist">'+cats.map(c=>`<option value="${esc(c)}">`).join('')+'</datalist>'+
+  '<button class="primary" onclick="addMenu()">Добавить в меню</button><hr>';
+ cats.forEach(c=>{
+  h+=`<h3>${esc(c)}</h3>`;
+  db.menu.forEach((m,i)=>{
+   if((m.c||'Прочее')!==c)return;
+   let k=+m.k||0,marg=m.p-k,pct=m.p?Math.round(marg/m.p*100):0;
+   h+=`<div class="row"><span>${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span></span><span class="actions"><button onclick="editMenu(${i})">✏️</button><button class="danger" onclick="delMenu(${i})">Удалить</button></span></div>`;
+  });
+ });
+ h+='</div>';
+ document.getElementById('menu').innerHTML=h;
+}
+function addMenu(){
+ let n=document.getElementById('mn').value.trim(),p=document.getElementById('mp').value,c=document.getElementById('mc').value.trim()||'Прочее';
+ let k=document.getElementById('mk').value;
+ if(!n||p===''){alert('Заполните название и цену.');return}
+ db.menu.push({n,p:+p,c,k:Math.max(0,+k||0)});save();renderMenu();
+}
+function delMenu(i){
+ if(!confirm('Удалить «'+db.menu[i].n+'» из меню? На уже закрытые заказы это не повлияет.'))return;
+ db.menu.splice(i,1);save();renderMenu();
+}
+function editMenu(i){
+ let m=db.menu[i];
+ let n=prompt('Название',m.n);if(n===null)return;
+ let p=prompt('Цена продажи ¥',m.p);if(p===null)return;
+ let k=prompt('Себестоимость ¥ (во сколько обходится кафе)',m.k||0);if(k===null)return;
+ let c=prompt('Категория',m.c||'Прочее');if(c===null)return;
+ db.menu[i]={n:n.trim()||m.n,p:+p,k:Math.max(0,+k||0),c:c.trim()||'Прочее'};save();renderMenu();
+}
+
+/* ---------- ДАННЫЕ / БЭКАП / НАСТРОЙКИ ---------- */
+function backupWarning(){
+ if(!storageOk)return '<div class="warn" style="background:#fee2e2;border-color:#dc2626">🚫 <b>Данные НЕ сохраняются!</b> Этот браузер не даёт кассе доступ к памяти. Всё, что вы введёте, исчезнет при обновлении страницы.<br>Откройте файл <b>Центр плова - Касса.html</b> напрямую в Chrome (двойной клик по файлу), а не в режиме просмотра или инкогнито.</div>';
+ let n=db.orders.length-(db.lastBackup||0);
+ let today=new Date().toDateString();
+ let todayCnt=db.orders.filter(o=>new Date(o.time).toDateString()===today).length;
+ let savedToday=db.lastBackupAt&&new Date(db.lastBackupAt).toDateString()===today;
+ if(todayCnt>=5&&!savedToday)return `<div class="warn">📥 Сегодня принято заказов: <b>${todayCnt}</b>, а копия за сегодня ещё не сохранялась. В конце смены зайдите в «⚙️ Данные» → «Сохранить копию в файл».</div>`;
+ if(n<30)return'';
+ return `<div class="warn">⚠️ С последнего бэкапа прошло ${n} заказов. Данные хранятся только в этом браузере — если очистить его память, всё пропадёт. <b>Зайдите в «⚙️ Данные» и сохраните копию.</b></div>`;
+}
+function renderSettings(){
+ hideBar();
+ let h='<div class="panel"><h2>Бэкап данных</h2>'+
+  '<p class="small">Все заказы, меню и история хранятся <b>только в этом браузере на этом устройстве</b>. Очистка истории браузера, переустановка или сброс планшета сотрут их безвозвратно. Сохраняйте копию хотя бы раз в неделю.</p>'+
+  `<p class="small muted">Заказов в базе: <b>${db.orders.length}</b>${db.lastBackup?` · с последнего бэкапа: <b>${db.orders.length-db.lastBackup}</b>`:''}<br>Последняя копия: <b>${db.lastBackupAt?new Date(db.lastBackupAt).toLocaleString('ru-RU'):'ни разу не сохранялась'}</b></p>`+
+  '<div class="actions"><button class="primary" onclick="exportData()">💾 Сохранить копию в файл</button>'+
+  '<button class="blue" onclick="document.getElementById(\'imp\').click()">📂 Загрузить из файла</button>'+
+  '<button onclick="exportCsv()">📊 Заказы в CSV</button>'+
+  '<button onclick="exportCash()">💰 Расходы в CSV</button></div>'+
+  '<input type="file" id="imp" accept=".json" class="hidden" onchange="importData(this)">'+
+  '</div>'+
+  '<div class="panel"><h2>Настройки зала</h2>'+
+  `<label>Столов в зале</label><input id="sh" type="number" min="0" value="${+db.settings.hall||0}">`+
+  `<label>Столов на улице</label><input id="ss" type="number" min="0" value="${+db.settings.street||0}">`+
+  `<label>Текст внизу чека</label><input id="sf" value="${esc(db.settings.footer||'')}">`+
+  '<button class="primary" onclick="saveSettings()">Сохранить</button></div>'+
+  '<div class="panel"><h2 class="muted">Опасная зона</h2>'+
+  '<button class="danger" onclick="wipe()">Стереть всю историю заказов</button></div>';
+ document.getElementById('settings').innerHTML=h;
+}
+function saveSettings(){
+ let nh=Math.max(0,+document.getElementById('sh').value||0);
+ let ns=Math.max(0,+document.getElementById('ss').value||0);
+ let willLose=Object.keys(db.open).filter(k=>+k>nh+ns);
+ if(willLose.length&&!confirm('Внимание: на столах '+willLose.map(k=>tableName(k)).join(', ')+' есть открытые заказы, а при новых настройках таких столов не будет.\n\nОни попадут в раздел «Заказы на убранных столах». Продолжить?'))return;
+ db.settings.hall=nh;
+ db.settings.street=ns;
+ db.settings.footer=document.getElementById('sf').value;
+ save();alert('Сохранено. Столов всего: '+tables());show('tables');
+}
+function stamp(){
+ let d=new Date(),p=n=>String(n).padStart(2,'0');
+ return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());
+}
+function download(name,content,mime){
+ let b=new Blob([content],{type:mime}),u=URL.createObjectURL(b),a=document.createElement('a');
+ a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+function exportData(){
+ download('Центр плова - бэкап '+stamp()+'.json',JSON.stringify(db),'application/json');
+ db.lastBackup=db.orders.length;db.lastBackupAt=new Date().toISOString();save();
+ if(document.getElementById('settings').innerHTML)renderSettings();
+}
+function exportCsv(){
+ let rows=[['Чек','Дата','Тип','Место','Позиции','Сумма','Скидка','Итого','Оплата','Курьеру','Себестоимость','Прибыль','Статус']];
+ db.orders.forEach(o=>rows.push([
+  o.num||'',new Date(o.time).toLocaleString('ru-RU'),o.type==='table'?'Зал/улица':'Доставка',orderName(o),
+  o.items.map(x=>x.name+' x'+x.qty).join('; '),o.subtotal||o.total,o.discount||0,o.total,o.pay||'',
+  +o.courier||0,orderCost(o),o.total-orderCost(o)-(+o.courier||0),o.void?('АННУЛИРОВАН'+(o.void.reason?': '+o.void.reason:'')):''
+ ]));
+ let csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\n');
+ download('Центр плова - заказы '+stamp()+'.csv',csv,'text/csv');
+}
+function exportCash(){
+ let rows=[['Дата','Тип','Статья','Способ','Сумма','Комментарий']];
+ (db.cash||[]).forEach(o=>rows.push([new Date(o.time).toLocaleString('ru-RU'),
+  o.dir==='in'?'Приход':'Расход',o.cat,o.pay,o.sum,o.note||'']));
+ (db.waste||[]).forEach(o=>rows.push([new Date(o.time).toLocaleString('ru-RU'),
+  'Списание',o.name+' x'+o.qty,'—',(+o.cost||0)*o.qty,o.reason||'']));
+ let csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\n');
+ download('Центр плова - расходы '+stamp()+'.csv',csv,'text/csv');
+}
+function importData(input){
+ let f=input.files[0];if(!f)return;
+ let r=new FileReader();
+ r.onload=()=>{
+  try{
+   let d=JSON.parse(r.result);
+   if(!d||!Array.isArray(d.orders)||!Array.isArray(d.menu))throw 0;
+   if(!confirm('Заменить текущие данные на файл?\n\nВ файле: '+d.orders.length+' заказов, '+d.menu.length+' позиций меню.\nСейчас в базе: '+db.orders.length+' заказов.\n\nТекущие данные будут перезаписаны.'))return;
+   localStorage.setItem(KEY,JSON.stringify(d));db=load();save();
+   alert('Данные загружены.');show('tables');
+  }catch(e){alert('Не получилось прочитать файл — похоже, это не бэкап кассы.')}
+  input.value='';
+ };
+ r.readAsText(f);
+}
+function wipe(){
+ if(!confirm('Стереть ВСЮ историю заказов? Меню и настройки останутся.'))return;
+ if(!confirm('Точно? Это необратимо. Сначала лучше сохранить копию в файл.'))return;
+ db.orders=[];db.counter=1;db.lastBackup=0;save();alert('История очищена.');show('reports');
+}
+
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),1000);
+document.getElementById('clock').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+applyFixed();
+show('tables');
+</script>
+<script>
+// офлайн-режим: приложение открывается без интернета
+if('serviceWorker' in navigator)addEventListener('load',function(){
+ navigator.serviceWorker.register('./sw.js').catch(function(){});
+});
+</script>
+</body></html>
