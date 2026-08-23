@@ -119,12 +119,13 @@ const DEFAULT_MENU=[
  ['Спрайт',5,'Напитки'],['Чай с лимоном',10,'Напитки'],['Кефир',8,'Напитки']
 ].map(m=>({n:m[0],p:m[1],c:m[2]}));
 
+// суммы намеренно не зашиты в код — заполняются на устройстве, вкладка «Касса → Постоянные»
 const DEFAULT_FIXED=[
- {n:'Аренда',s:7500,pay:'Наличные'},
- {n:'Зарплата',s:5500,pay:'Наличные'},
- {n:'Свет',s:5000,pay:'Наличные'},
- {n:'Налог',s:1740,pay:'Наличные'},
- {n:'Интернет',s:150,pay:'Наличные'}
+ {n:'Аренда',s:0,pay:'Наличные'},
+ {n:'Зарплата',s:0,pay:'Наличные'},
+ {n:'Свет',s:0,pay:'Наличные'},
+ {n:'Налог',s:0,pay:'Наличные'},
+ {n:'Интернет',s:0,pay:'Наличные'}
 ];
 let storageOk=(function(){
  try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true}catch(e){return false}
@@ -677,6 +678,7 @@ function ymLabel(k){
 function applyFixed(){
  let now=new Date(), key=ym(now), added=0;
  (db.fixed||[]).forEach(f=>{
+  if(!(+f.s>0))return;                 // сумма ещё не указана — вносить нечего
   let k=key+'|'+f.n;
   if((db.cash||[]).some(o=>o.fkey===k))return;
   if((db.fixedSkip||[]).indexOf(k)>=0)return;
@@ -990,12 +992,16 @@ function viewSumYear(){
 function viewCashFix(){
  let cur=ym(new Date());
  let tot=(db.fixed||[]).reduce((a,f)=>a+(+f.s||0),0);
- let h='<div class="panel"><h2>🔁 Ежемесячные платежи</h2>'+
+ let empty=(db.fixed||[]).filter(f=>!(+f.s>0)).length;
+ let h='';
+ if(empty)h+=`<div class="warn">⚠️ У <b>${empty}</b> платежей не указана сумма — они не попадают в расходы. Нажмите ✏️ и впишите, сколько платите в месяц.</div>`;
+ h+='<div class="panel"><h2>🔁 Ежемесячные платежи</h2>'+
   '<p class="small">Вносятся автоматически первого числа каждого месяца и попадают в расходы. Сумму можно поправить — например, если свет вышел дороже.</p>';
  if(!(db.fixed||[]).length)h+='<p class="muted">Постоянных платежей нет.</p>';
  (db.fixed||[]).forEach((f,i)=>{
   let done=(db.cash||[]).some(o=>o.fkey===cur+'|'+f.n);
-  h+=`<div class="row"><span><b>${esc(f.n)}</b><br><span class="small">${esc(f.pay||'Наличные')} · ${done?'✅ внесён за '+ymLabel(cur):'⏳ ещё не внесён'}</span></span><b>${money(f.s)}</b><span class="actions"><button onclick="editFixed(${i})">✏️</button><button class="danger" onclick="delFixed(${i})">✕</button></span></div>`;
+  let noSum=!(+f.s>0);
+  h+=`<div class="row"><span><b>${esc(f.n)}</b><br><span class="small">${esc(f.pay||'Наличные')} · ${noSum?'⚠️ укажите сумму':done?'✅ внесён за '+ymLabel(cur):'⏳ ещё не внесён'}</span></span><b${noSum?' style="color:#dc2626"':''}>${noSum?'—':money(f.s)}</b><span class="actions"><button onclick="editFixed(${i})">✏️</button><button class="danger" onclick="delFixed(${i})">✕</button></span></div>`;
  });
  h+=`<div class="row"><span><b>Итого в месяц</b></span><b>${money(tot)}</b></div>`;
  h+=`<div class="row"><span class="muted">В год</span><b>${money(tot*12)}</b></div>`;
