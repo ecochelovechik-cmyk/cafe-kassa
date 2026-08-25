@@ -1266,7 +1266,9 @@ function renderSettings(){
   '<button class="blue" onclick="document.getElementById(\'imp\').click()">📂 Загрузить из файла</button>'+
   '<button onclick="exportCsv()">📊 Заказы в CSV</button>'+
   '<button onclick="exportCash()">💰 Расходы в CSV</button></div>'+
-  '<input type="file" id="imp" accept=".json" class="hidden" onchange="importData(this)">'+
+  '<input type="file" id="imp" class="hidden" onchange="importData(this)">'+
+  '<p class="small muted">Если кнопка «Загрузить из файла» не показывает копию — откройте бэкап любым просмотрщиком, скопируйте весь текст и нажмите «Вставить текстом».</p>'+
+  '<button onclick="pasteBackup()">📋 Вставить текстом</button>'+
   '</div>'+
   '<div class="panel"><h2>Настройки зала</h2>'+
   `<label>Столов в зале</label><input id="sh" type="number" min="0" value="${+db.settings.hall||0}">`+
@@ -1325,19 +1327,37 @@ function exportCash(){
  let csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\n');
  download('Центр плова - расходы '+stamp()+'.csv',csv,'text/csv');
 }
+// запасной способ для телефонов, где выбор файла работает через раз
+function pasteBackup(){
+ let h='<div class="panel"><h2>Вставить копию текстом</h2>'+
+  '<p class="small">Откройте файл бэкапа (он начинается с фигурной скобки), скопируйте <b>весь</b> текст и вставьте сюда.</p>'+
+  '<textarea id="pb" rows="8" style="width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;font-family:monospace;font-size:12px" placeholder=\'{"v":2,"settings":...\'></textarea>'+
+  '<div class="actions"><button onclick="show(\'settings\')">← Отмена</button>'+
+  '<button class="primary" onclick="applyPasted()">Загрузить данные</button></div></div>';
+ document.getElementById('settings').innerHTML=h;
+}
+function applyPasted(){
+ let t=(document.getElementById('pb').value||'').trim();
+ if(!t)return alert('Вставьте текст копии.');
+ loadBackupText(t);
+}
+// общая проверка и применение копии — и для файла, и для вставленного текста
+function loadBackupText(text){
+ let d;
+ try{d=JSON.parse(text)}catch(e){return alert('Это не похоже на копию кассы: текст повреждён или скопирован не полностью.')}
+ if(!d||!Array.isArray(d.orders)||!Array.isArray(d.menu))return alert('Файл прочитался, но это не копия кассы — нет заказов и меню.');
+ if(!confirm('Заменить текущие данные на копию?\n\nВ копии: '+d.orders.length+' заказов, '+d.menu.length+' позиций меню.\nСейчас в базе: '+db.orders.length+' заказов.\n\nТекущие данные будут перезаписаны.'))return;
+ try{localStorage.setItem(KEY,JSON.stringify(d))}
+ catch(e){return alert('Не хватило места в памяти браузера для этой копии.')}
+ db=load();save();
+ alert('Данные загружены: '+db.orders.length+' заказов, '+db.menu.length+' позиций меню.');
+ show('tables');
+}
 function importData(input){
  let f=input.files[0];if(!f)return;
  let r=new FileReader();
- r.onload=()=>{
-  try{
-   let d=JSON.parse(r.result);
-   if(!d||!Array.isArray(d.orders)||!Array.isArray(d.menu))throw 0;
-   if(!confirm('Заменить текущие данные на файл?\n\nВ файле: '+d.orders.length+' заказов, '+d.menu.length+' позиций меню.\nСейчас в базе: '+db.orders.length+' заказов.\n\nТекущие данные будут перезаписаны.'))return;
-   localStorage.setItem(KEY,JSON.stringify(d));db=load();save();
-   alert('Данные загружены.');show('tables');
-  }catch(e){alert('Не получилось прочитать файл — похоже, это не бэкап кассы.')}
-  input.value='';
- };
+ r.onload=()=>{loadBackupText(String(r.result||''));input.value=''};
+ r.onerror=()=>{alert('Не удалось прочитать файл.');input.value=''};
  r.readAsText(f);
 }
 function wipe(){
