@@ -18,7 +18,7 @@
 body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827;-webkit-text-size-adjust:100%}
 header{background:#111827;color:white;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
 h1{font-size:20px;margin:0}
-.wrap{max-width:1100px;margin:auto;padding:16px}
+.wrap{max-width:1100px;margin:auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom))}
 nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 button{border:0;border-radius:10px;padding:11px 14px;font-size:15px;cursor:pointer;background:#e5e7eb;font-family:inherit}
 button:active{opacity:.7}
@@ -56,10 +56,11 @@ input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;
 .minus{position:absolute;bottom:8px;right:8px;background:#e5e7eb;border-radius:9px;width:36px;height:32px;line-height:32px;text-align:center;font-weight:bold;font-size:20px;color:#374151}
 .minus:active{background:#d1d5db}
 #bar{position:fixed;left:0;right:0;bottom:0;background:#111827;color:#fff;padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:10;box-shadow:0 -2px 12px #0003}
+#bar.hidden{display:none}
 #bar .s{font-size:13px;color:#9ca3af}
 #bar .m{font-size:20px;font-weight:bold}
 #bar button{padding:12px 16px}
-.pad{height:calc(96px + env(safe-area-inset-bottom))}
+.pad{height:calc(40px + env(safe-area-inset-bottom))}
 .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:bold;white-space:nowrap}
 .b-hall{background:#dcfce7;color:#166534}
 .b-street{background:#fef3c7;color:#92400e}
@@ -168,7 +169,19 @@ function tableName(i){
 }
 // имя из закрытого заказа: сохранённое в чеке имеет приоритет — настройки зала могли поменяться
 function orderName(o){return o.type==='table'?(o.label||tableName(o.id)):'Доставка'}
-function hideBar(){document.getElementById('bar').classList.add('hidden')}
+function hideBar(){
+ document.getElementById('bar').classList.add('hidden');
+ document.querySelector('.wrap').style.paddingBottom='';
+}
+// подстраховка: любой экран, на котором панель всё же видна, получает место под неё
+function fixPad(){setTimeout(padUnderBar,0)}
+// панель закреплена внизу и перекрывала бы кнопки заказа — освобождаем под неё место с запасом
+function padUnderBar(){
+ let bar=document.getElementById('bar');
+ let w=document.querySelector('.wrap');
+ if(bar.classList.contains('hidden')){w.style.paddingBottom='';return}
+ w.style.paddingBottom=(bar.offsetHeight+56)+'px';
+}
 function setSection(id){
  hideBar();
  for(const x of ['tables','delivery','cash','history','reports','menu','settings']){
@@ -180,6 +193,7 @@ function show(id){
  document.getElementById('bar').classList.add('hidden');
  setSection(id);
  ({tables:renderTables,delivery:renderDelivery,cash:renderCash,history:renderHistory,reports:renderReports,menu:renderMenu,settings:renderSettings})[id]();
+ padUnderBar();
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -264,20 +278,26 @@ function orderScreen(type,id){
   h+=`<button class="primary" onclick="payScreen('${type}','${id}')">✓ Оплата и закрытие</button>`;
  }
  h+=`<button class="danger" onclick="cancelOrder('${type}','${id}')">Отменить заказ</button></div></div>`;
- if(o.items.length)h+='<div class="pad"></div>';
+ h+='<div class="pad"></div>';
  document.getElementById(type==='table'?'tables':'delivery').innerHTML=h;
  renderBar(type,id);
 }
 // закреплённый итог внизу: сумму видно, не прокручивая экран
 function renderBar(type,id){
  let bar=document.getElementById('bar');
+ let sec=type==='table'?'tables':'delivery';
  let o=getOrder(type,id);            // перечитываем из базы, а не верим переданному объекту
- if(!o||!o.items||!o.items.length){bar.classList.add('hidden');return}
+ if(document.getElementById(sec).classList.contains('hidden')||!o||!o.items||!o.items.length){
+  bar.classList.add('hidden');
+  document.querySelector('.wrap').style.paddingBottom='';
+  return;
+ }
  let n=o.items.reduce((s,x)=>s+x.qty,0),fin=Math.max(0,total(o)-(+o.discount||0));
  bar.innerHTML=`<span><span class="s">${esc(type==='table'?tableName(id):'Доставка')} · ${n} шт.</span><br><span class="m">${money(fin)}</span></span>`+
   `<span class="actions"><button class="blue" onclick="printBill('${type}','${id}')">🖨 Пречек</button>`+
   `<button class="primary" onclick="payScreen('${type}','${id}')">✓ Оплата</button></span>`;
  bar.classList.remove('hidden');
+ padUnderBar();
 }
 // сколько этого блюда уже в заказе (складываем, даже если цена в меню менялась)
 function qtyOf(o,name){return (o&&o.items||[]).filter(x=>x.name===name).reduce((s,x)=>s+x.qty,0)}
