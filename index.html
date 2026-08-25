@@ -77,7 +77,7 @@ input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;
 .cats button{padding:8px 12px;font-size:14px}
 .cats button.on{background:#111827;color:white}
 .note{font-size:13px;color:#1e40af;background:#dbeafe;border-radius:7px;padding:2px 8px;display:inline-block;margin-top:3px}
-.qty{min-width:34px;text-align:center;font-weight:bold}
+.qty{min-width:40px;text-align:center;font-weight:bold;background:#fff;border:1px solid #d1d5db}
 .warn{background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
 .tot{font-size:22px;margin:12px 0}
 .sub{display:flex;justify-content:space-between;padding:4px 0;color:#6b7280;font-size:14px}
@@ -118,7 +118,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="bar" class="hidden"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-26.2';
+const APP_VERSION='2026-08-26.3';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={};
@@ -169,6 +169,9 @@ function save(){
  catch(e){storageOk=false;alert('⚠️ Не удалось сохранить заказ — память браузера переполнена или недоступна.\n\nСрочно сделайте бэкап: «⚙️ Данные» → «Сохранить копию в файл».')}
 }
 function money(n){return Number(n||0).toFixed(2)+' ¥'}
+// количество может быть дробным: половина порции — обычное дело
+function qtyText(q){q=+q||0;return Number.isInteger(q)?String(q):q.toFixed(1)}
+function roundQty(q){return Math.max(0,Math.round((+q||0)*2)/2)}
 function tables(){return (+db.settings.hall||0)+(+db.settings.street||0)}
 function tableName(i){
  i=+i;
@@ -261,14 +264,15 @@ function orderScreen(type,id){
   let q=qtyOf(o,m.n), ph=dishPhoto(m);
   h+=`<div class="card item ${q?'has':''}" onclick="addItem('${type}','${id}',${i})">`+
      (ph?`<img class="ph" src="${ph}" alt="" loading="lazy">`:'')+
-     (q?`<span class="cnt">${q}</span>`:'')+
+     (q?`<span class="cnt">${qtyText(q)}</span>`:'')+
      `<b>${esc(m.n)}</b><span class="price">${money(m.p)}</span>`+
      (q?`<span class="minus" onclick="event.stopPropagation();decByName('${type}','${id}',${i})">−</span>`:'')+
      '</div>';
  });
  h+='</div><hr><h3>Заказ</h3>';
  if(!o.items.length)h+='<p class="muted">Пока ничего не добавлено.</p>';
- o.items.forEach((x,i)=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${x.qty}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b><span class="actions"><button class="${x.note?'blue':''}" onclick="setNote('${type}','${id}',${i})">💬</button><button onclick="changeItem('${type}','${id}',${i},-1)">−</button><span class="qty">${x.qty}</span><button onclick="changeItem('${type}','${id}',${i},1)">+</button><button class="danger" onclick="delItem('${type}','${id}',${i})">✕</button></span></div>`);
+ else h+='<p class="small muted">Нажмите на количество, чтобы поставить половину или полторы порции.</p>';
+ o.items.forEach((x,i)=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${qtyText(x.qty)}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b><span class="actions"><button class="${x.note?'blue':''}" onclick="setNote('${type}','${id}',${i})">💬</button><button onclick="changeItem('${type}','${id}',${i},-1)">−</button><button class="qty" onclick="setQty('${type}','${id}',${i})">${qtyText(x.qty)}</button><button onclick="changeItem('${type}','${id}',${i},1)">+</button><button class="danger" onclick="delItem('${type}','${id}',${i})">✕</button></span></div>`);
  let sub=total(o),disc=+o.discount||0,fin=Math.max(0,sub-disc);
  if(o.items.length){
   h+=`<div class="sub"><span>Сумма</span><span>${money(sub)}</span></div>`;
@@ -324,9 +328,24 @@ function addItem(type,id,mi){
  x?x.qty++:o.items.push({name:m.n,price:+m.p,cost:+m.k||0,qty:1});
  save();orderScreen(type,id);
 }
+// нажатие на количество: можно поставить 1.5 порции, а не только целые
+function setQty(type,id,i){
+ let o=getOrder(type,id),x=o.items[i];
+ let v=prompt('Сколько порций «'+x.name+'»?\n\nМожно дробное: 0.5 — половина, 1.5 — полторы.',qtyText(x.qty));
+ if(v===null)return;
+ let q=roundQty(String(v).replace(',','.'));
+ if(!(q>0)){
+  if(confirm('Убрать «'+x.name+'» из заказа?')){o.items.splice(i,1);save();orderScreen(type,id)}
+  return;
+ }
+ x.qty=q;save();orderScreen(type,id);
+}
 function changeItem(type,id,i,d){
- let o=getOrder(type,id);o.items[i].qty+=d;
- if(o.items[i].qty<=0)o.items.splice(i,1);
+ let o=getOrder(type,id),x=o.items[i];
+ // у дробной позиции шаг тоже дробный, иначе 1.5 не убавить до 0.5
+ let step=Number.isInteger(x.qty)?1:0.5;
+ x.qty=roundQty(x.qty+d*step);
+ if(x.qty<=0)o.items.splice(i,1);
  save();orderScreen(type,id);
 }
 function delItem(type,id,i){
@@ -432,7 +451,7 @@ function printReceipt(r,isBill){
  r.items.forEach(x=>{
   h+=`<div>${esc(x.name)}</div>`;
   if(x.note)h+=`<div>  * ${esc(x.note)}</div>`;
-  h+=`<div class="r"><span>${money(x.price)} × ${x.qty}</span><span>${money(x.price*x.qty)}</span></div>`;
+  h+=`<div class="r"><span>${money(x.price)} × ${qtyText(x.qty)}</span><span>${money(x.price*x.qty)}</span></div>`;
  });
  h+='<hr>';
  if(r.discount){
@@ -514,7 +533,7 @@ function histDetails(i){
  let o=db.orders[i],d=new Date(o.time);
  let h=`<div class="panel"><h2>Чек №${o.num||'—'} <span class="small">${esc(orderName(o))} · ${d.toLocaleString('ru-RU')}</span></h2>`;
  if(o.void)h+=`<div class="warn" style="background:#fee2e2;border-color:#dc2626">✕ <b>Чек аннулирован</b> ${new Date(o.void.at).toLocaleString('ru-RU')}${o.void.reason?' · '+esc(o.void.reason):''}. В выручку не входит.</div>`;
- o.items.forEach(x=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${x.qty}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b></div>`);
+ o.items.forEach(x=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${qtyText(x.qty)}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b></div>`);
  if(o.discount)h+=`<div class="sub"><span>Сумма</span><span>${money(o.subtotal)}</span></div><div class="sub"><span>Скидка</span><span>−${money(o.discount)}</span></div>`;
  h+=`<div class="tot"><b>Итого: ${money(o.total)}</b> <span class="small">${esc(o.pay||'—')}</span></div>`;
  if(+o.courier)h+=`<div class="sub"><span>🚴 Курьеру</span><span>−${money(o.courier)}</span></div>`;
@@ -631,7 +650,7 @@ function renderReports(){
   dW.forEach(o=>{byN[o.name]=byN[o.name]||{q:0,s:0};byN[o.name].q+=o.qty;byN[o.name].s+=(+o.cost||0)*o.qty});
   h+='<div class="panel"><h3>🗑 Списано сегодня</h3>';
   Object.entries(byN).sort((a,b)=>b[1].s-a[1].s).forEach(([n,v])=>
-   h+=`<div class="row"><span>${esc(n)} <span class="small">× ${v.q}</span></span><b style="color:#dc2626">−${money(v.s)}</b></div>`);
+   h+=`<div class="row"><span>${esc(n)} <span class="small">× ${qtyText(v.q)}</span></span><b style="color:#dc2626">−${money(v.s)}</b></div>`);
   h+='</div>';
  }
  // способы оплаты за сегодня
@@ -648,7 +667,7 @@ function renderReports(){
  let top=Object.entries(cnt).sort((a,b)=>b[1].s-a[1].s).slice(0,10);
  h+='<div class="panel"><h3>Топ блюд за месяц</h3>';
  if(!top.length)h+='<p class="muted">Данных пока нет.</p>';
- top.forEach(([n,v])=>h+=`<div class="row"><span>${esc(n)} <span class="small">× ${v.q}</span>${v.p!==v.s?`<br><span class="small">прибыль ${money(v.p)}</span>`:''}</span><b>${money(v.s)}</b></div>`);
+ top.forEach(([n,v])=>h+=`<div class="row"><span>${esc(n)} <span class="small">× ${qtyText(v.q)}</span>${v.p!==v.s?`<br><span class="small">прибыль ${money(v.p)}</span>`:''}</span><b>${money(v.s)}</b></div>`);
  h+='</div><div class="panel"><h3>По столам (всё время)</h3>';
  let hall=+db.settings.hall||0,hallSum=0,strSum=0;
  for(let i=1;i<=tables();i++){
@@ -778,7 +797,7 @@ function viewCashOps(){
   h+=`<hr><div class="row"><span class="muted">Списано за смену</span><b style="color:#dc2626">−${money(wc)}</b></div>`;
   [...w].reverse().forEach(o=>{
    let i=db.waste.indexOf(o);
-   h+=`<div class="row"><span><b>${esc(o.name)} × ${o.qty}</b><br><span class="small">${esc(o.reason)} · ${new Date(o.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}${o.cost?'':' · ⚠️ себестоимость не указана'}</span></span><b style="color:#dc2626">−${money((+o.cost||0)*o.qty)}</b><button class="danger" onclick="delWaste(${i})">✕</button></div>`;
+   h+=`<div class="row"><span><b>${esc(o.name)} × ${qtyText(o.qty)}</b><br><span class="small">${esc(o.reason)} · ${new Date(o.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}${o.cost?'':' · ⚠️ себестоимость не указана'}</span></span><b style="color:#dc2626">−${money((+o.cost||0)*o.qty)}</b><button class="danger" onclick="delWaste(${i})">✕</button></div>`;
   });
  }
  h+='</div>';
@@ -921,7 +940,7 @@ function periodBlocks(sales,ops,waste,title){
   waste.forEach(o=>{byN[o.name]=byN[o.name]||{q:0,s:0};byN[o.name].q+=o.qty;byN[o.name].s+=(+o.cost||0)*o.qty});
   h+='<div class="sect">🗑 Списано</div><div class="panel">';
   Object.entries(byN).sort((a,b)=>b[1].s-a[1].s).forEach(e=>
-   h+=`<div class="row"><span>${esc(e[0])} <span class="small">× ${e[1].q}</span></span><b style="color:#dc2626">−${money(e[1].s)}</b></div>`);
+   h+=`<div class="row"><span>${esc(e[0])} <span class="small">× ${qtyText(e[1].q)}</span></span><b style="color:#dc2626">−${money(e[1].s)}</b></div>`);
   h+=`<div class="row"><span><b>Всего</b></span><b style="color:#dc2626">−${money(wc)}</b></div></div>`;
  }
  return h;
@@ -1118,7 +1137,7 @@ function dishesScreen(period){
  if(!rows.length)h+='<p class="muted">Продаж за этот период не было.</p>';
  rows.forEach(r=>{
   let prof=r.sum-r.cost;
-  h+=`<div class="row"><span><b>${esc(r.n)}</b><br><span class="small">${r.q} шт.${r.cost?' · прибыль '+money(prof):' · ⚠️ себестоимость не указана'}</span></span><b>${money(r.sum)}</b><span class="small">${totS?Math.round(r.sum/totS*100):0}%</span></div>`;
+  h+=`<div class="row"><span><b>${esc(r.n)}</b><br><span class="small">${qtyText(r.q)} шт.${r.cost?' · прибыль '+money(prof):' · ⚠️ себестоимость не указана'}</span></span><b>${money(r.sum)}</b><span class="small">${totS?Math.round(r.sum/totS*100):0}%</span></div>`;
  });
  if(rows.length)h+=`<div class="row"><span><b>Итого</b><br><span class="small">${totQ} порций</span></span><b>${money(totS)}</b></div>`;
  h+='</div>';
@@ -1138,7 +1157,7 @@ function printDishes(){
  let h='<div class="c big">Центр плова</div><div class="c">ПРОДАНО ' + names[dishPeriod] + '</div>'+
   `<div class="c">${now.toLocaleString('ru-RU')}</div><hr>`;
  rows.forEach(r=>{
-  h+=`<div>${esc(r.n)}</div><div class="r"><span>${r.q} шт.</span><span>${money(r.sum)}</span></div>`;
+  h+=`<div>${esc(r.n)}</div><div class="r"><span>${qtyText(r.q)} шт.</span><span>${money(r.sum)}</span></div>`;
  });
  h+=`<hr><div class="r big"><span>ПОРЦИЙ</span><span>${totQ}</span></div>`+
     `<div class="r big"><span>ИТОГО</span><span>${money(totS)}</span></div>`;
@@ -1449,7 +1468,7 @@ function exportCsv(){
  let rows=[['Чек','Дата','Тип','Место','Позиции','Сумма','Скидка','Итого','Оплата','Курьеру','Себестоимость','Прибыль','Статус']];
  db.orders.forEach(o=>rows.push([
   o.num||'',new Date(o.time).toLocaleString('ru-RU'),o.type==='table'?'Зал/улица':'Доставка',orderName(o),
-  o.items.map(x=>x.name+' x'+x.qty).join('; '),o.subtotal||o.total,o.discount||0,o.total,o.pay||'',
+  o.items.map(x=>x.name+' x'+qtyText(x.qty)).join('; '),o.subtotal||o.total,o.discount||0,o.total,o.pay||'',
   +o.courier||0,orderCost(o),o.total-orderCost(o)-(+o.courier||0),o.void?('АННУЛИРОВАН'+(o.void.reason?': '+o.void.reason:'')):''
  ]));
  let csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\n');
@@ -1541,7 +1560,7 @@ function fullReport(){
  // --- чеки ---
  let sales=[...db.orders].sort((a,b)=>new Date(b.time)-new Date(a.time)).map(o=>
   `<tr class="${o.void?'void':''}"><td>${o.num||''}</td><td>${dt(o.time)}</td><td>${esc(orderName(o))}</td>
-   <td>${(o.items||[]).map(x=>esc(x.name)+' ×'+x.qty+(x.note?' ('+esc(x.note)+')':'')).join('<br>')}</td>
+   <td>${(o.items||[]).map(x=>esc(x.name)+' ×'+qtyText(x.qty)+(x.note?' ('+esc(x.note)+')':'')).join('<br>')}</td>
    <td class="r">${m(o.subtotal||o.total)}</td><td class="r">${o.discount?'−'+m(o.discount):''}</td>
    <td class="r"><b>${m(o.total)}</b></td><td>${esc(o.pay||'')}</td>
    <td class="r">${(+o.courier)?'−'+m(o.courier):''}</td>
@@ -1557,7 +1576,7 @@ function fullReport(){
   r.q+=x.qty; r.sum+=x.price*x.qty; r.cost+=(+x.cost||0)*x.qty;
  }));
  let dishes=Object.entries(map).sort((a,b)=>b[1].sum-a[1].sum).map(([n,r])=>
-  `<tr><td>${esc(n)}</td><td class="r">${r.q}</td><td class="r">${m(r.sum)}</td>
+  `<tr><td>${esc(n)}</td><td class="r">${qtyText(r.q)}</td><td class="r">${m(r.sum)}</td>
    <td class="r">${r.cost?m(r.cost):'—'}</td><td class="r">${r.cost?m(r.sum-r.cost):'—'}</td>
    <td class="r">${rev?Math.round(r.sum/rev*100):0}%</td></tr>`);
  let totQ=Object.values(map).reduce((a,r)=>a+r.q,0);
@@ -1591,7 +1610,7 @@ function fullReport(){
  page('waste','Списанные блюда',
   table(['Дата','Блюдо','Порций','Убыток','Причина'],
    [...waste].sort((a,b)=>new Date(b.time)-new Date(a.time)).map(o=>
-   `<tr><td>${dt(o.time)}</td><td>${esc(o.name)}</td><td class="r">${o.qty}</td>
+   `<tr><td>${dt(o.time)}</td><td>${esc(o.name)}</td><td class="r">${qtyText(o.qty)}</td>
     <td class="r">−${m((+o.cost||0)*o.qty)}</td><td>${esc(o.reason||'')}</td></tr>`))+
   `<p><b>Всего списано на ${m(wc)}</b></p>`);
 
