@@ -118,7 +118,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="bar" class="hidden"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-26.5';
+const APP_VERSION='2026-08-26.6';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -281,7 +281,7 @@ function orderScreen(type,id){
  db.menu.forEach((m,i)=>{
   let q=qtyOf(o,m.n), ph=dishPhoto(m);
   h+=`<div class="card item ${q?'has':''}" onclick="addItem('${type}','${id}',${i})">`+
-     (ph?`<img class="ph" src="${ph}" alt="" loading="lazy">`:'')+
+     (ph?`<img class="ph" src="${ph}" alt="" loading="lazy" onerror="this.remove()">`:'')+
      (q?`<span class="cnt" onclick="event.stopPropagation();setQtyByDish('${type}','${id}',${i})">${qtyText(q)}</span>`:'')+
      `<b>${esc(m.n)}</b><span class="price">${money(m.p)}</span>`+
      (q?`<span class="minus" onclick="event.stopPropagation();decByName('${type}','${id}',${i})">−</span>`:'')+
@@ -1327,7 +1327,7 @@ function renderMenu(){
    let k=+m.k||0,marg=m.p-k,pct=m.p?Math.round(marg/m.p*100):0;
    let ph=dishPhoto(m);
    h+=`<div class="mrow">`+
-      (ph?`<img class="mph" src="${ph}" alt="" loading="lazy">`:'<div class="noph">🍽️</div>')+
+      (ph?`<img class="mph" src="${ph}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;noph&quot;>🍽️</div>'">`:'<div class="noph">🍽️</div>')+
       `<span class="txt">${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span></span>`+
       `<span class="actions"><button onclick="pickPhoto(${i})">📷</button>`+
       (m.img?`<button onclick="dropPhoto(${i})">✕ фото</button>`:'')+
