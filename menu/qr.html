@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Таблички с QR для столов</title>
+<style>
+body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#f3f4f6;color:#111827}
+.hint{max-width:760px;margin:auto;padding:18px}
+.hint h1{font-size:21px;margin:0 0 8px}
+.hint p{font-size:15px;line-height:1.6;color:#374151;margin:6px 0}
+.hint b{color:#111827}
+.sheet{max-width:760px;margin:auto;padding:0 18px 30px;display:grid;
+ grid-template-columns:1fr 1fr;gap:14px}
+.card{background:#fff;border:2px dashed #d1d5db;border-radius:14px;padding:18px 14px;text-align:center;
+ break-inside:avoid;page-break-inside:avoid}
+.card .top{font-size:19px;font-weight:700;margin-bottom:10px}
+.card img{width:100%;max-width:210px;height:auto;display:block;margin:0 auto}
+.card .mid{font-size:16px;font-weight:600;margin-top:10px}
+.card .bot{font-size:13px;color:#6b7280;margin-top:4px}
+button{border:0;background:#16a34a;color:#fff;border-radius:10px;padding:12px 20px;font-size:16px;cursor:pointer}
+@media print{
+ .hint,button{display:none}
+ body{background:#fff}
+ .sheet{max-width:none;padding:0;gap:0}
+ .card{border:1px dashed #bbb;border-radius:0;padding:24px 12px}
+ @page{size:A4;margin:8mm}
+}
+</style></head><body>
+<div class="hint">
+ <h1>Таблички с QR-кодом меню</h1>
+ <p>На листе A4 помещается <b>4 таблички</b>. Распечатайте, разрежьте по пунктиру и поставьте на столы.</p>
+ <p>Гость наводит камеру телефона — открывается меню с фотографиями и ценами. Ничего устанавливать не нужно, работает на любом телефоне.</p>
+ <p>Адрес меню: <b>https://ecochelovechik-cmyk.github.io/cafe-kassa/menu/</b></p>
+ <button onclick="window.print()">🖨 Печать</button>
+</div>
+<div class="sheet">
+  <div class="card">
+    <div class="top">🍚 Центр плова</div>
+    <img src="qr.png" alt="QR">
+    <div class="mid">Меню с фотографиями</div>
+    <div class="bot">Наведите камеру телефона</div>
+  </div>
+  <div class="card">
+    <div class="top">🍚 Центр плова</div>
+    <img src="qr.png" alt="QR">
+    <div class="mid">Меню с фотографиями</div>
+    <div class="bot">Наведите камеру телефона</div>
+  </div>
+  <div class="card">
+    <div class="top">🍚 Центр плова</div>
+    <img src="qr.png" alt="QR">
+    <div class="mid">Меню с фотографиями</div>
+    <div class="bot">Наведите камеру телефона</div>
+  </div>
+  <div class="card">
+    <div class="top">🍚 Центр плова</div>
+    <img src="qr.png" alt="QR">
+    <div class="mid">Меню с фотографиями</div>
+    <div class="bot">Наведите камеру телефона</div>
+  </div>
+</div>
+</body></html>

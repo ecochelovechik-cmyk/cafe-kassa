@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Центр плова — меню</title>
+<meta name="description" content="Меню кафе «Центр плова»: плов, шурпа, манты, курутоб, салаты и напитки.">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" href="../icon-192.png">
+<meta name="theme-color" content="#111827">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+ background:#faf7f2;color:#1f2937;-webkit-text-size-adjust:100%}
+header{background:#111827;color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 16px;text-align:center}
+header h1{margin:0;font-size:24px;letter-spacing:.3px}
+header p{margin:6px 0 0;font-size:14px;color:#9ca3af}
+.wrap{max-width:900px;margin:auto;padding:14px 14px calc(30px + env(safe-area-inset-bottom))}
+nav{position:sticky;top:0;z-index:5;background:#faf7f2;padding:12px 0 10px;
+ display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav a{flex:0 0 auto;padding:9px 15px;border-radius:999px;background:#fff;color:#374151;
+ text-decoration:none;font-size:15px;border:1px solid #e5e7eb;white-space:nowrap}
+nav a:active{background:#111827;color:#fff}
+h2{font-size:20px;margin:26px 0 12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;scroll-margin-top:64px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.dish{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px #0000000f;display:flex;flex-direction:column}
+.dish img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f3f4f6}
+.dish .noimg{width:100%;aspect-ratio:1/1;background:#f3f4f6;display:flex;align-items:center;
+ justify-content:center;font-size:38px}
+.dish .b{padding:11px 12px 13px;display:flex;flex-direction:column;gap:5px;flex:1}
+.dish .n{font-size:15px;font-weight:600;line-height:1.3}
+.dish .p{font-size:17px;font-weight:700;color:#15803d;margin-top:auto}
+footer{text-align:center;color:#6b7280;font-size:14px;padding:28px 16px 10px;line-height:1.7}
+footer b{color:#374151}
+</style>
+</head>
+<body>
+<header>
+ <h1>🍚 Центр плова</h1>
+ <p>Узбекская и таджикская кухня</p>
+</header>
+<div class="wrap">
+ <nav id="nav"></nav>
+ <div id="menu"></div>
+ <footer>
+  Цены указаны в юанях за порцию.<br>
+  Для заказа <b>позовите официанта</b> — он примет заказ за вашим столом.
+ </footer>
+</div>
+<script>
+// Меню витрины. При изменении цен в кассе — поправить здесь же.
+var MENU = [
+ ['Основные', [
+  ['Плов', 40, 'plov'],
+  ['Казан-кебаб', 45, 'kazan'],
+  ['Курутоби гушти', 45, 'kurutob-meat'],
+  ['Курутоб', 30, 'kurutob'],
+  ['Манты', 30, 'manti'],
+  ['Котлета с жареным картофелем', 30, 'kotleta'],
+  ['Чахохбили', 30, 'chahohbili']
+ ]],
+ ['Супы', [
+  ['Шурпа', 30, 'shurpa'],
+  ['Мастава', 30, 'mastava'],
+  ['Чечевичный суп', 30, 'lentil']
+ ]],
+ ['Салаты', [
+  ['Оливье', 15, 'olivie'],
+  ['Свежий салат', 10, 'salat']
+ ]],
+ ['Выпечка', [
+  ['Лепёшка', 5, 'lepeshka']
+ ]],
+ ['Напитки', [
+  ['Чай с лимоном', 10, 'tea'],
+  ['Кефир', 8, 'kefir'],
+  ['Дайао', 7, ''],
+  ['Кола 0.33', 5, ''],
+  ['Пепси', 5, ''],
+  ['Фанта', 5, ''],
+  ['Спрайт', 5, ''],
+  ['Вода без газа', 2, 'water']
+ ]]
+];
+
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+var nav = '', body = '';
+MENU.forEach(function(group, gi){
+ var title = group[0], dishes = group[1], id = 'g' + gi;
+ nav += '<a href="#' + id + '">' + esc(title) + '</a>';
+ body += '<h2 id="' + id + '">' + esc(title) + '</h2><div class="grid">';
+ dishes.forEach(function(d){
+  var name = d[0], price = d[1], img = d[2];
+  body += '<div class="dish">' +
+   (img ? '<img src="../dishes/' + img + '.jpg" alt="' + esc(name) + '" loading="lazy" ' +
+          'onerror="this.outerHTML=&quot;<div class=\\&quot;noimg\\&quot;>🍽️</div>&quot;">'
+        : '<div class="noimg">🥤</div>') +
+   '<div class="b"><div class="n">' + esc(name) + '</div>' +
+   '<div class="p">' + price + ' ¥</div></div></div>';
+ });
+ body += '</div>';
+});
+document.getElementById('nav').innerHTML = nav;
+document.getElementById('menu').innerHTML = body;
+</script>
+</body>
+</html>
