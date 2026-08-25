@@ -3,7 +3,7 @@
    ВАЖНО: при каждом обновлении кассы менять номер версии ниже,
    иначе на планшете останется старая копия. */
 
-var CACHE = 'kassa-v13';
+var CACHE = 'kassa-v14';
 
 var FILES = [
   './',
@@ -12,7 +12,23 @@ var FILES = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './dishes/plov.jpg',
+  './dishes/kazan.jpg',
+  './dishes/manti.jpg',
+  './dishes/kotleta.jpg',
+  './dishes/chahohbili.jpg',
+  './dishes/shurpa.jpg',
+  './dishes/mastava.jpg',
+  './dishes/lentil.jpg',
+  './dishes/salat.jpg',
+  './dishes/olivie.jpg',
+  './dishes/lepeshka.jpg',
+  './dishes/tea.jpg',
+  './dishes/kefir.jpg',
+  './dishes/water.jpg',
+  './dishes/kurutob.jpg',
+  './dishes/kurutob-meat.jpg'
 ];
 
 self.addEventListener('install', function (e) {
