@@ -52,7 +52,7 @@ input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;
 .card.item{position:relative;cursor:pointer;padding-right:46px;min-height:78px;-webkit-tap-highlight-color:transparent}
 .card.item:active{background:#f3f4f6}
 .card.has{border:2px solid #16a34a;background:#f0fdf4;padding:12px 44px 12px 12px}
-.cnt{position:absolute;top:9px;right:9px;background:#16a34a;color:#fff;border-radius:999px;min-width:30px;height:30px;line-height:30px;text-align:center;font-weight:bold;font-size:15px;padding:0 8px}
+.cnt{cursor:pointer;position:absolute;top:9px;right:9px;background:#16a34a;color:#fff;border-radius:999px;min-width:30px;height:30px;line-height:30px;text-align:center;font-weight:bold;font-size:15px;padding:0 8px}
 .minus{position:absolute;bottom:8px;right:8px;background:#e5e7eb;border-radius:9px;width:36px;height:32px;line-height:32px;text-align:center;font-weight:bold;font-size:20px;color:#374151}
 .minus:active{background:#d1d5db}
 #bar{position:fixed;left:0;right:0;bottom:0;background:#111827;color:#fff;padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:10;box-shadow:0 -2px 12px #0003}
@@ -118,7 +118,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="bar" class="hidden"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-26.3';
+const APP_VERSION='2026-08-26.4';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={};
@@ -264,12 +264,12 @@ function orderScreen(type,id){
   let q=qtyOf(o,m.n), ph=dishPhoto(m);
   h+=`<div class="card item ${q?'has':''}" onclick="addItem('${type}','${id}',${i})">`+
      (ph?`<img class="ph" src="${ph}" alt="" loading="lazy">`:'')+
-     (q?`<span class="cnt">${qtyText(q)}</span>`:'')+
+     (q?`<span class="cnt" onclick="event.stopPropagation();setQtyByDish('${type}','${id}',${i})">${qtyText(q)}</span>`:'')+
      `<b>${esc(m.n)}</b><span class="price">${money(m.p)}</span>`+
      (q?`<span class="minus" onclick="event.stopPropagation();decByName('${type}','${id}',${i})">−</span>`:'')+
      '</div>';
  });
- h+='</div><hr><h3>Заказ</h3>';
+ h+='</div><p class="small muted">Нажмите на зелёный кружок с количеством, чтобы поставить 0.5 или 1.5 порции.</p><hr><h3>Заказ</h3>';
  if(!o.items.length)h+='<p class="muted">Пока ничего не добавлено.</p>';
  else h+='<p class="small muted">Нажмите на количество, чтобы поставить половину или полторы порции.</p>';
  o.items.forEach((x,i)=>h+=`<div class="row"><span>${esc(x.name)}<br><span class="small">${money(x.price)} × ${qtyText(x.qty)}</span>${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${money(x.price*x.qty)}</b><span class="actions"><button class="${x.note?'blue':''}" onclick="setNote('${type}','${id}',${i})">💬</button><button onclick="changeItem('${type}','${id}',${i},-1)">−</button><button class="qty" onclick="setQty('${type}','${id}',${i})">${qtyText(x.qty)}</button><button onclick="changeItem('${type}','${id}',${i},1)">+</button><button class="danger" onclick="delItem('${type}','${id}',${i})">✕</button></span></div>`);
@@ -327,6 +327,13 @@ function addItem(type,id,mi){
  let x=o.items.find(x=>x.name===m.n&&x.price===+m.p&&!x.note);
  x?x.qty++:o.items.push({name:m.n,price:+m.p,cost:+m.k||0,qty:1});
  save();orderScreen(type,id);
+}
+// то же самое, но прямо с карточки блюда — по названию находим позицию в заказе
+function setQtyByDish(type,id,mi){
+ let o=getOrder(type,id),name=db.menu[mi].n;
+ let i=o.items.findIndex(x=>x.name===name);
+ if(i<0)return;
+ setQty(type,id,i);
 }
 // нажатие на количество: можно поставить 1.5 порции, а не только целые
 function setQty(type,id,i){
