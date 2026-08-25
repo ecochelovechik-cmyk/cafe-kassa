@@ -3,7 +3,7 @@
    ВАЖНО: при каждом обновлении кассы менять номер версии ниже,
    иначе на планшете останется старая копия. */
 
-var CACHE = 'kassa-v8';
+var CACHE = 'kassa-v9';
 
 var FILES = [
   './',
@@ -36,8 +36,9 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
   // сеть в приоритете, чтобы обновления доезжали; нет сети — отдаём из кэша
+  var fresh = e.request.mode === 'navigate' || /\.(html|js|webmanifest)$/.test(new URL(e.request.url).pathname);
   e.respondWith(
-    fetch(e.request).then(function (r) {
+    fetch(fresh ? new Request(e.request, { cache: 'reload' }) : e.request).then(function (r) {
       var copy = r.clone();
       caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
       return r;
