@@ -120,7 +120,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="bar" class="hidden"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-26.7';
+const APP_VERSION='2026-08-26.8';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -550,11 +550,25 @@ function renderHistory(){
    h+=`<div class="sect">${today?'Сегодня':d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} <span class="small">${dayList.length} зак. · ${money(dsum)}</span></div>`;
   }
   let title=k==='deliv'?'Заказ №'+(o.num||'—'):esc(orderName(o))+' <span class="small">№'+(o.num||'—')+'</span>';
-  h+=`<div class="row" ${o.void?'style="opacity:.55"':''}><span><span class="badge ${KINDS[k].c}">${KINDS[k].t}</span> <b>${title}</b>${o.void?' <span class="badge b-void">✕ аннулирован</span>':''}<br><span class="small">${d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})} · ${o.items.length} поз. · ${esc(o.pay||'—')}${(+o.courier)?' · 🚴 −'+money(o.courier):''}</span></span><b style="${o.void?'text-decoration:line-through;color:#9ca3af':''}">${money(o.total)}</b><span class="actions"><button onclick="histDetails(${i})">Что заказали</button><button onclick="reprint(${i})">🖨</button></span></div>`;
+  h+=`<div class="row" ${o.void?'style="opacity:.55"':''}><span><span class="badge ${KINDS[k].c}">${KINDS[k].t}</span> <b>${title}</b>${o.void?' <span class="badge b-void">✕ аннулирован</span>':''}<br><span class="small">${d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})} · ${o.items.length} поз. · ${esc(o.pay||'—')}${(+o.courier)?' · 🚴 −'+money(o.courier):''}</span></span><b style="${o.void?'text-decoration:line-through;color:#9ca3af':''}">${money(o.total)}</b><span class="actions"><button onclick="openHistOrder(${i})">Что заказали</button><button onclick="reprint(${i})">🖨</button></span></div>`;
  });
  if(list.length>200)h+='<p class="small muted">Показаны последние 200 заказов из '+list.length+'. Полный список — «⚙️ Данные» → выгрузка в CSV.</p>';
  h+='</div>';
  document.getElementById('history').innerHTML=h;
+}
+// Куда вернуть список после просмотра чека. Пишется только при входе из списка:
+// перерисовки внутри самого чека (аннулирование) позицию затирать не должны.
+let histScroll=0;
+function openHistOrder(i){
+ histScroll=window.scrollY||document.documentElement.scrollTop||0;
+ histDetails(i);
+ window.scrollTo(0,0);
+}
+function backHistory(){
+ show('history');
+ window.scrollTo(0,histScroll);
+ // список строится синхронно, но высота может доехать на следующий кадр
+ requestAnimationFrame(()=>window.scrollTo(0,histScroll));
 }
 function histDetails(i){
  let o=db.orders[i],d=new Date(o.time);
@@ -566,7 +580,7 @@ function histDetails(i){
  if(+o.courier)h+=`<div class="sub"><span>🚴 Курьеру</span><span>−${money(o.courier)}</span></div>`;
  let cost=orderCost(o);
  if(cost)h+=`<div class="sub"><span>Себестоимость</span><span>−${money(cost)}</span></div><div class="sub"><span><b>Прибыль с заказа</b></span><span><b>${money(o.total-cost-(+o.courier||0))}</b></span></div>`;
- h+=`<div class="actions"><button onclick="show('history')">← Назад</button><button class="blue" onclick="reprint(${i})">🖨 Перепечатать</button>`;
+ h+=`<div class="actions"><button onclick="backHistory()">← Назад</button><button class="blue" onclick="reprint(${i})">🖨 Перепечатать</button>`;
  if(!o.void)h+=`<button onclick="restoreOrder(${i})">↩ Вернуть в работу</button><button class="danger" onclick="voidOrder(${i})">✕ Аннулировать чек</button>`;
  h+='</div></div>';
  document.getElementById('history').innerHTML=h;
