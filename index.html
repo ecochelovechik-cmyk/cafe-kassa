@@ -49,6 +49,8 @@ input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;
 .mrow{display:flex;gap:12px;align-items:center;border-bottom:1px solid #eee;padding:10px 0}
 .mrow:last-child{border-bottom:0}
 .mrow .txt{flex:1;min-width:0}
+.card.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.card.tap:active{background:#f3f4f6}
 .card.item{position:relative;cursor:pointer;padding-right:46px;min-height:78px;-webkit-tap-highlight-color:transparent}
 .card.item:active{background:#f3f4f6}
 .card.has{border:2px solid #16a34a;background:#f0fdf4;padding:12px 44px 12px 12px}
@@ -118,7 +120,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="bar" class="hidden"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-26.6';
+const APP_VERSION='2026-08-26.7';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -754,6 +756,9 @@ function delWaste(i){
  db.waste.splice(i,1);save();renderCash();
 }
 let cashTab='ops', cashMonth=null, cashYear=null, sumPeriod='day', sumDay=null;
+// раскрыт ли список проданных блюд под карточкой «Выручка»
+let dishesOpen=false;
+function toggleDishes(){dishesOpen=!dishesOpen;renderCash()}
 function setCashTab(t){cashTab=t;renderCash()}
 function ym(d){d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function ymLabel(k){
@@ -904,6 +909,27 @@ function viewCashSum(){
  return h+({day:viewSumDay,month:viewSumMonth,year:viewSumYear})[sumPeriod]();
 }
 function dayKey(d){d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+// что продано за период: раскрывается нажатием на карточку «Выручка»
+function dishList(sales,title){
+ let map={};
+ sales.forEach(o=>(o.items||[]).forEach(x=>{
+  let r=map[x.name]=map[x.name]||{q:0,sum:0,cost:0};
+  r.q+=x.qty; r.sum+=x.price*x.qty; r.cost+=(+x.cost||0)*x.qty;
+ }));
+ let rows=Object.entries(map).sort((a,b)=>b[1].sum-a[1].sum);
+ if(!rows.length)return '<div class="panel"><p class="muted">В заказах нет ни одной позиции.</p></div>';
+ let totQ=rows.reduce((a,e)=>a+e[1].q,0), totS=rows.reduce((a,e)=>a+e[1].sum,0);
+ let rev=sales.reduce((a,o)=>a+o.total,0);
+ let h=`<div class="sect">🍽️ Что продано ${title} <span class="small">${rows.length} наим. · ${qtyText(totQ)} порций</span></div><div class="panel">`;
+ rows.forEach(e=>{
+  let n=e[0], r=e[1];
+  h+=`<div class="row"><span>${esc(n)}<br><span class="small">${qtyText(r.q)} порц. по ${money(r.sum/r.q)}${r.cost?' · прибыль '+money(r.sum-r.cost):''}</span></span><b>${money(r.sum)}</b></div>`;
+ });
+ h+=`<div class="row"><span><b>Всего блюд</b></span><b>${money(totS)}</b></div>`;
+ // сумма блюд считается до скидок, выручка — после, поэтому они могут не сойтись
+ if(Math.abs(totS-rev)>0.005)h+=`<p class="small muted">Блюд продано на ${money(totS)}, выручка ${money(rev)} — разница ${money(totS-rev)} это скидки.</p>`;
+ return h+'</div>';
+}
 // сводка по любому набору продаж и операций — общая часть для дня и месяца
 function periodBlocks(sales,ops,waste,title){
  let rev=sales.reduce((a,o)=>a+o.total,0);
@@ -917,11 +943,12 @@ function periodBlocks(sales,ops,waste,title){
  let gross=rev-cost-cour;                       // заработок на самих блюдах, до расходов кафе
  let noCost=sales.some(o=>(o.items||[]).some(x=>!(+x.cost)));
  let h='<div class="grid">'+
-  `<div class="card"><span class="muted">Выручка</span><div class="stat">${money(rev)}</div><small>${sales.length} заказов</small></div>`+
+  `<div class="card${sales.length?' tap':''}"${sales.length?' onclick="toggleDishes()"':''}><span class="muted">Выручка</span><div class="stat">${money(rev)}</div><small>${sales.length} заказов${sales.length?' · <b style="color:#2563eb">'+(dishesOpen?'скрыть блюда ▲':'что продано ▼')+'</b>':''}</small></div>`+
   (sales.length?`<div class="card"><span class="muted">Прибыль с блюд</span><div class="stat" style="color:#15803d">${money(gross)}</div><small>${noCost?'⚠️ себестоимость не у всех':(rev?Math.round(gross/rev*100)+'% от выручки':'')}</small></div>`:'')+
   `<div class="card"><span class="muted">Расходы</span><div class="stat" style="color:#dc2626">−${money(outSum)}</div><small>${out.length} операций</small></div>`+
   (inSum?`<div class="card"><span class="muted">Приходы</span><div class="stat" style="color:#15803d">+${money(inSum)}</div></div>`:'')+
   `<div class="card"><span class="muted">Чистая прибыль</span><div class="stat" style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</div><small>после всех расходов</small></div></div>`;
+ if(dishesOpen&&sales.length)h+=dishList(sales,title);
  // расшифровка
  if(rev||outSum||wc){
   h+='<div class="panel"><h3>Из чего сложилось</h3>'+
@@ -1034,10 +1061,11 @@ function viewSumYear(){
  let gross=rev-cost-cour;
  let noCost=sales.some(o=>(o.items||[]).some(x=>!(+x.cost)));
  h+=`<div class="sect first">Итоги за ${cashYear} год</div><div class="grid">`+
-  `<div class="card"><span class="muted">Выручка за год</span><div class="stat">${money(rev)}</div><small>${sales.length} заказов</small></div>`+
+  `<div class="card${sales.length?' tap':''}"${sales.length?' onclick="toggleDishes()"':''}><span class="muted">Выручка за год</span><div class="stat">${money(rev)}</div><small>${sales.length} заказов${sales.length?' · <b style="color:#2563eb">'+(dishesOpen?'скрыть блюда ▲':'что продано ▼')+'</b>':''}</small></div>`+
   (sales.length?`<div class="card"><span class="muted">Прибыль с блюд</span><div class="stat" style="color:#15803d">${money(gross)}</div><small>${noCost?'⚠️ себестоимость не у всех':(rev?Math.round(gross/rev*100)+'% от выручки':'')}</small></div>`:'')+
   `<div class="card"><span class="muted">Расходы за год</span><div class="stat" style="color:#dc2626">−${money(outSum)}</div></div>`+
   `<div class="card"><span class="muted">Чистая прибыль</span><div class="stat" style="color:${net<0?'#dc2626':'#15803d'}">${money(net)}</div></div></div>`;
+ if(dishesOpen&&sales.length)h+=dishList(sales,'за '+cashYear+' год');
  if(rev||outSum){
   h+='<div class="panel"><h3>Из чего сложилось за год</h3>'+
    `<div class="row"><span>Выручка</span><b>${money(rev)}</b></div>`+
