@@ -1,0 +1,12 @@
+name = "plov-kassa"
+main = "worker/index.js"
+compatibility_date = "2026-08-01"
+
+# Ключ кассы задаётся секретом, а не здесь:
+#   npx wrangler secret put KASSA_KEY
+# В репозиторий он не попадает — репозиторий публичный.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "plov-kassa"
+database_id = "ЗАПОЛНИТСЯ_ПРИ_СОЗДАНИИ_БАЗЫ"
