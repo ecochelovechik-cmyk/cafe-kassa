@@ -61,6 +61,9 @@ input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;
 .card.item{position:relative;cursor:pointer;padding-right:46px;min-height:78px;-webkit-tap-highlight-color:transparent}
 .card.item:active{background:#f3f4f6}
 .card.has{border:2px solid #16a34a;background:#f0fdf4;padding:12px 44px 12px 12px}
+.card.item.out{opacity:.5;background:#f9fafb}
+.card .left{display:block;font-size:12px;color:#6b7280;margin-top:3px}
+.card .left.zero{color:#dc2626;font-weight:700}
 .cnt{cursor:pointer;position:absolute;top:9px;right:9px;background:#16a34a;color:#fff;border-radius:999px;min-width:30px;height:30px;line-height:30px;text-align:center;font-weight:bold;font-size:15px;padding:0 8px}
 .minus{position:absolute;bottom:8px;right:8px;background:#e5e7eb;border-radius:9px;width:36px;height:32px;line-height:32px;text-align:center;font-weight:bold;font-size:20px;color:#374151}
 .minus:active{background:#d1d5db}
@@ -156,7 +159,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="pad" class="ovl hidden" onclick="if(event.target===this)padClose()"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-27.6';
+const APP_VERSION='2026-08-27.7';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -326,10 +329,12 @@ function orderScreen(type,id){
  let h=`<div class="panel"><h2>${esc(title)} <span class="small">${since(o.started)}</span></h2><div class="grid">`;
  db.menu.forEach((m,i)=>{
   let q=qtyOf(o,m.n), ph=dishPhoto(m);
-  h+=`<div class="card item ${q?'has':''}" onclick="addItem('${type}','${id}',${i})">`+
+  let free=freeQty(m.n), out=free<=0, note=stockNote(m.n);
+  h+=`<div class="card item ${q?'has':''}${out?' out':''}" onclick="${out?`outOfStock('${esc(m.n).replace(/'/g,"&#39;")}')`:`addItem('${type}','${id}',${i})`}">`+
      (ph?`<img class="ph" src="${ph}" alt="" loading="lazy" onerror="this.remove()">`:'')+
      (q?`<span class="cnt" onclick="event.stopPropagation();setQtyByDish('${type}','${id}',${i})">${qtyText(q)}</span>`:'')+
      `<b>${esc(m.n)}</b><span class="price">${money(m.p)}</span>`+
+     (note?`<span class="left${out?' zero':''}">${note}</span>`:'')+
      (q?`<span class="minus" onclick="event.stopPropagation();decByName('${type}','${id}',${i})">−</span>`:'')+
      '</div>';
  });
@@ -377,6 +382,7 @@ function renderBar(type,id){
 }
 // сколько этого блюда уже в заказе (складываем, даже если цена в меню менялась)
 function qtyOf(o,name){return (o&&o.items||[]).filter(x=>x.name===name).reduce((s,x)=>s+x.qty,0)}
+function outOfStock(n){alert('«'+n+'» закончилось.\n\nПополнить остаток: раздел «🍽️ Меню», кнопка 📦 у блюда.');}
 function decByName(type,id,mi){
  let o=getOrder(type,id),name=db.menu[mi].n;
  for(let i=o.items.length-1;i>=0;i--){
@@ -386,8 +392,47 @@ function decByName(type,id,mi){
  }
  save();orderScreen(type,id);
 }
+/* ---------- ОСТАТКИ БЛЮД ----------
+   m.st — сколько осталось на кухне/складе. Пусто или отсутствует = остаток не ведём
+   (плов из казана считать поштучно смысла нет, а колу — есть).
+   Занятое в открытых заказах не вычитается из m.st, а СЧИТАЕТСЯ: тогда отмена заказа,
+   удаление позиции и перенос стола возвращают порции сами, без ручного отката.
+   m.st уменьшается только когда заказ закрыт (продано) или блюдо списано. */
+function stockOf(m){
+ if(m===undefined||m===null)return null;
+ if(m.st===''||m.st===undefined||m.st===null)return null;
+ let v=+m.st;
+ return isFinite(v)?v:null;
+}
+function menuByName(name){return db.menu.find(m=>m.n===name)}
+// сколько порций этого блюда уже занято открытыми заказами (зал + доставка)
+function reservedQty(name){
+ let s=0;
+ [...Object.values(db.open||{}),...Object.values(db.delivery||{})].forEach(o=>
+  (o.items||[]).forEach(x=>{if(x.name===name)s+=+x.qty||0}));
+ return s;
+}
+// сколько ещё можно продать прямо сейчас; Infinity — если остаток не ведём
+function freeQty(name){
+ let m=menuByName(name), st=stockOf(m);
+ if(st===null)return Infinity;
+ return roundQty(Math.max(0,st-reservedQty(name)));
+}
+function stockNote(name){
+ let f=freeQty(name);
+ return f===Infinity?'':(f>0?'осталось '+qtyText(f):'закончилось');
+}
+// продано/списано — уменьшаем остаток; аннулирование чека возвращает обратно
+function stockApply(items,sign){
+ (items||[]).forEach(x=>{
+  let m=menuByName(x.name);
+  if(stockOf(m)===null)return;
+  m.st=roundQty(Math.max(0,(+m.st||0)+sign*(+x.qty||0)));
+ });
+}
 function addItem(type,id,mi){
  let o=getOrder(type,id),m=db.menu[mi];
+ if(freeQty(m.n)<1){alert('«'+m.n+'» закончилось.\n\nОстаток можно пополнить в разделе «🍽️ Меню».');return}
  let x=o.items.find(x=>x.name===m.n&&x.price===+m.p&&!x.note);
  x?x.qty++:o.items.push({name:m.n,price:+m.p,cost:+m.k||0,qty:1});
  save();orderScreen(type,id);
@@ -475,6 +520,9 @@ function setQty(type,id,i){
  };
  qtyPad(x.name,x.qty,function(q){
   if(!(q>0))return drop();
+  let max=roundQty(x.qty+freeQty(x.name));   // своё количество уже занято, его учитываем
+  if(q>max){alert('«'+x.name+'»: больше '+qtyText(max)+' нет.');q=max}
+  if(!(q>0))return drop();
   x.qty=q;save();orderScreen(type,id);
  },drop);
 }
@@ -482,6 +530,7 @@ function changeItem(type,id,i,d){
  let o=getOrder(type,id),x=o.items[i];
  // у дробной позиции шаг тоже дробный, иначе 1.5 не убавить до 0.5
  let step=Number.isInteger(x.qty)?1:0.5;
+ if(d>0&&freeQty(x.name)<step){alert('«'+x.name+'» больше нет.');return}
  x.qty=roundQty(x.qty+d*step);
  if(x.qty<=0)o.items.splice(i,1);
  save();orderScreen(type,id);
@@ -568,6 +617,7 @@ function closeOrder(type,id,pay){
  let sub=total(o),disc=+o.discount||0;
  let rec={num:db.counter++,type,id,label:type==='table'?tableName(id):'Доставка',items:o.items,subtotal:sub,discount:disc,total:Math.max(0,sub-disc),courier:type==='delivery'?(+o.courier||0):0,pay,time:new Date().toISOString()};
  db.orders.push(rec);
+ stockApply(rec.items,-1);                   // продано — снимаем с остатка
  if(type==='table')delete db.open[id];else delete db.delivery[id];
  save();
  // принтера в кафе пока нет: печать по умолчанию выключена, включается в «⚙️ Данные».
@@ -707,6 +757,7 @@ function voidOrder(i){
  if(r===null)return;
  if(!confirm('Аннулировать чек №'+(o.num||'')+' на '+money(o.total)+'?\n\nОн останется в истории с пометкой, но перестанет считаться в выручке.'))return;
  o.void={at:new Date().toISOString(),reason:r.trim()};
+ stockApply(o.items,+1);                     // чек аннулирован — порции возвращаются
  save();histDetails(i);
 }
 // вернуть заказ в работу: позиции снова открыты, а старый чек аннулируется
@@ -721,6 +772,8 @@ function restoreOrder(i){
   db.delivery[nid]={items:JSON.parse(JSON.stringify(o.items)),discount:+o.discount||0,courier:+o.courier||0,started:new Date().toISOString()};
  }
  o.void={at:new Date().toISOString(),reason:'возврат в работу'};
+ // порции вернулись на остаток и тут же снова заняты открытым заказом — иначе вычлись бы дважды
+ stockApply(o.items,+1);
  save();
  alert('Заказ снова открыт. Чек №'+(o.num||'')+' аннулирован.');
  show(o.type==='table'?'tables':'delivery');
@@ -875,6 +928,7 @@ function addWaste(){
  let m=db.menu[+mi];
  db.waste.push({name:m.n,qty:q,cost:+m.k||0,price:+m.p||0,
   reason:document.getElementById('wr').value,time:new Date().toISOString()});
+ stockApply([{name:m.n,qty:q}],-1);          // списанное тоже уходит с остатка
  save();renderCash();
 }
 function delWaste(i){
@@ -1472,6 +1526,7 @@ function renderMenu(){
   '<label>Название блюда</label><input id="mn" placeholder="Например: Плов">'+
   '<label>Цена продажи ¥</label><input id="mp" type="number" inputmode="decimal" placeholder="40">'+
   '<label>Себестоимость ¥ <span class="small">во сколько блюдо обходится кафе</span></label><input id="mk" type="number" inputmode="decimal" placeholder="0">'+
+  '<label>Остаток <span class="small">сколько есть сейчас; пусто — не считаем</span></label><input id="ms" type="number" inputmode="decimal" placeholder="не считаем">'+
   '<label>Категория</label><input id="mc" list="catlist" placeholder="Основные">'+
   '<datalist id="catlist">'+cats.map(c=>`<option value="${esc(c)}">`).join('')+'</datalist>'+
   '<button class="primary" onclick="addMenu()">Добавить в меню</button><hr>';
@@ -1483,8 +1538,8 @@ function renderMenu(){
    let ph=dishPhoto(m);
    h+=`<div class="mrow">`+
       (ph?`<img class="mph" src="${ph}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;noph&quot;>🍽️</div>'">`:'<div class="noph">🍽️</div>')+
-      `<span class="txt">${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span></span>`+
-      `<span class="actions"><button onclick="pickPhoto(${i})">📷</button>`+
+      `<span class="txt">${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span>${stockOf(m)===null?'':`<br><span class="small" style="color:${freeQty(m.n)>0?'#166534':'#dc2626'}">📦 ${freeQty(m.n)>0?'осталось '+qtyText(freeQty(m.n)):'закончилось'}${reservedQty(m.n)?' · занято в заказах '+qtyText(reservedQty(m.n)):''}</span>`}</span>`+
+      `<span class="actions"><button class="${stockOf(m)===null?'':'blue'}" onclick="setStock(${i})">📦</button><button onclick="pickPhoto(${i})">📷</button>`+
       (m.img?`<button onclick="dropPhoto(${i})">✕ фото</button>`:'')+
       `<button onclick="editMenu(${i})">✏️</button><button class="danger" onclick="delMenu(${i})">Удалить</button></span></div>`;
   });
@@ -1531,7 +1586,17 @@ function addMenu(){
  let n=document.getElementById('mn').value.trim(),p=document.getElementById('mp').value,c=document.getElementById('mc').value.trim()||'Прочее';
  let k=document.getElementById('mk').value;
  if(!n||p===''){alert('Заполните название и цену.');return}
- db.menu.push({n,p:+p,c,k:Math.max(0,+k||0),img:''});save();renderMenu();
+ let st=document.getElementById('ms').value;
+ db.menu.push({n,p:+p,c,k:Math.max(0,+k||0),st:st===''?'':roundQty(st),img:''});save();renderMenu();
+}
+// остаток задаётся той же панелью, что и порции: без клавиатуры телефона
+function setStock(i){
+ let m=db.menu[i], cur=stockOf(m);
+ numPad({title:'Остаток',name:m.n,value:cur===null?0:cur,unit:'шт',
+  quick:[0,5,10,20,50],decimals:1,maxWhole:4,round:roundQty,
+  hint:(cur===null?'Сейчас остаток не считаем. ':'')+'Занято открытыми заказами: '+qtyText(reservedQty(m.n)),
+  onOk:function(v){m.st=roundQty(v);save();renderMenu()},
+  onRemove:function(){delete m.st;save();renderMenu()},removeLabel:'Не считать'});
 }
 function delMenu(i){
  if(!confirm('Удалить «'+db.menu[i].n+'» из меню? На уже закрытые заказы это не повлияет.'))return;
