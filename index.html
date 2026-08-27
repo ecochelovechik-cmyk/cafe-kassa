@@ -159,7 +159,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="pad" class="ovl hidden" onclick="if(event.target===this)padClose()"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-27.8';
+const APP_VERSION='2026-08-27.9';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -1632,7 +1632,8 @@ function renderMenu(){
   '<label>Остаток <span class="small">сколько есть сейчас; пусто — не считаем</span></label><input id="ms" type="number" inputmode="decimal" placeholder="не считаем">'+
   '<label>Категория</label><input id="mc" list="catlist" placeholder="Основные">'+
   '<datalist id="catlist">'+cats.map(c=>`<option value="${esc(c)}">`).join('')+'</datalist>'+
-  '<button class="primary" onclick="addMenu()">Добавить в меню</button><hr>';
+  '<button class="primary" onclick="addMenu()">Добавить в меню</button><hr>'+
+  '<p class="small muted">У каждого блюда ниже есть кнопка <b>📦</b> — это остаток: сколько порций есть сейчас. Когда порции кончатся, блюдо станет серым и его нельзя будет пробить. Пусто — остаток не считаем.</p>';
  cats.forEach(c=>{
   h+=`<h3>${esc(c)}</h3>`;
   db.menu.forEach((m,i)=>{
@@ -1642,7 +1643,7 @@ function renderMenu(){
    h+=`<div class="mrow">`+
       (ph?`<img class="mph" src="${ph}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;noph&quot;>🍽️</div>'">`:'<div class="noph">🍽️</div>')+
       `<span class="txt">${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span>${stockOf(m)===null?'':`<br><span class="small" style="color:${freeQty(m.n)>0?'#166534':'#dc2626'}">📦 ${freeQty(m.n)>0?'осталось '+qtyText(freeQty(m.n)):'закончилось'}${reservedQty(m.n)?' · занято в заказах '+qtyText(reservedQty(m.n)):''}</span>`}</span>`+
-      `<span class="actions"><button class="${stockOf(m)===null?'':'blue'}" onclick="setStock(${i})">📦</button><button onclick="pickPhoto(${i})">📷</button>`+
+      `<span class="actions"><button class="${stockOf(m)===null?'':'blue'}" onclick="setStock(${i})">📦 ${stockOf(m)===null?'остаток':qtyText(freeQty(m.n))}</button><button onclick="pickPhoto(${i})">📷</button>`+
       (m.img?`<button onclick="dropPhoto(${i})">✕ фото</button>`:'')+
       `<button onclick="editMenu(${i})">✏️</button><button class="danger" onclick="delMenu(${i})">Удалить</button></span></div>`;
   });
@@ -2083,10 +2084,43 @@ function archiveOld(){
  alert('Убрано записей: '+n+'. Занято памяти: '+dbSize()+' ('+dbPercent()+'%).');
  renderSettings();
 }
+// Стирание истории необратимо и восстановить её неоткуда: данные лежат только
+// на этом устройстве. Поэтому три заслона: показать, что именно пропадёт;
+// не пускать, пока отчёт не выгружен; заставить написать слово руками.
 function wipe(){
- if(!confirm('Стереть ВСЮ историю заказов? Меню и настройки останутся.'))return;
- if(!confirm('Точно? Это необратимо. Сначала лучше сохранить копию в файл.'))return;
- db.orders=[];db.counter=1;db.lastBackup=0;save();alert('История очищена.');show('reports');
+ let n=db.orders.length;
+ if(!n)return alert('История и так пуста.');
+ let live=liveOrders(), sum=live.reduce((a,o)=>a+o.total,0);
+ let times=db.orders.map(o=>new Date(o.time).getTime()).filter(t=>t);
+ let from=times.length?new Date(Math.min.apply(null,times)):null;
+ let to=times.length?new Date(Math.max.apply(null,times)):null;
+ let d=x=>x?x.toLocaleDateString('ru-RU'):'—';
+
+ if(!confirm('Будет стёрто НАВСЕГДА:\n\n· чеков: '+n+'\n· выручки в них: '+money(sum)+
+   '\n· период: '+d(from)+' — '+d(to)+
+   '\n\nМеню, остатки и настройки останутся.\n\nПродолжить?'))return;
+
+ // Отчёт должен быть выгружен ПОСЛЕ последнего чека, иначе стирать нечего смысла
+ let saved=db.lastBackupAt?new Date(db.lastBackupAt).getTime():0;
+ let newest=times.length?Math.max.apply(null,times):0;
+ if(!saved||saved<newest){
+  if(confirm('Полный отчёт не сохранён'+(saved?' с '+new Date(saved).toLocaleString('ru-RU'):' ни разу')+
+    '.\n\nСначала скачайте его — после стирания восстановить будет неоткуда.'+
+    '\n\nСкачать полный отчёт сейчас?')){
+   fullReport();
+   alert('Отчёт скачан. Проверьте, что файл открылся и в нём есть ваши данные,'+
+     '\n\nи только потом нажмите «Стереть всю историю заказов» ещё раз.');
+  }
+  return;   // в этот заход не стираем в любом случае
+ }
+
+ let word=prompt('Последний шаг.\n\nНапишите большими буквами слово СТЕРЕТЬ,\nчтобы подтвердить удаление '+n+' чеков.','');
+ if(word===null)return;
+ if(word.trim().toUpperCase()!=='СТЕРЕТЬ')return alert('Слово не совпало. Ничего не стёрто.');
+
+ db.orders=[];db.counter=1;db.lastBackup=0;save();
+ alert('История очищена. Меню, остатки и настройки на месте.');
+ show('reports');
 }
 
 // файл, скачанный на устройство, живёт своей жизнью: новые версии в него не попадают
