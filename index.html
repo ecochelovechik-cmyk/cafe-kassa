@@ -15,7 +15,14 @@
 <meta name="format-detection" content="telephone=no">
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827;-webkit-text-size-adjust:100%}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827;-webkit-text-size-adjust:100%;
+ /* iPhone/Android воспринимали быстрые повторные нажатия как двойной тап и увеличивали
+    страницу. manipulation убирает только двойной тап, щипок для увеличения остаётся. */
+ touch-action:manipulation}
+/* при быстрых нажатиях по блюду не выделять текст и не звать лупу.
+   touch-action не наследуется, поэтому дублируем его на сами кнопки. */
+.card.item,.card.item *,button,.cnt,.minus{-webkit-user-select:none;user-select:none;
+ -webkit-touch-callout:none;touch-action:manipulation}
 header{background:#111827;color:white;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
 h1{font-size:20px;margin:0}
 .wrap{max-width:1100px;margin:auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom))}
@@ -120,7 +127,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="bar" class="hidden"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-27.1';
+const APP_VERSION='2026-08-27.2';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -334,7 +341,7 @@ function renderBar(type,id){
  }
  let n=o.items.reduce((s,x)=>s+x.qty,0),fin=Math.max(0,total(o)-(+o.discount||0));
  bar.innerHTML=`<span><span class="s">${esc(type==='table'?tableName(id):'Доставка')} · ${n} шт.</span><br><span class="m">${money(fin)}</span></span>`+
-  `<span class="actions"><button class="blue" onclick="printBill('${type}','${id}')">🖨 Пречек</button>`+
+  `<span class="actions"><button class="dark" onclick="show('${sec}')">${type==='table'?'🪑 Столы':'🚚 Доставки'}</button>`+
   `<button class="primary" onclick="payScreen('${type}','${id}')">✓ Оплата</button></span>`;
  bar.classList.remove('hidden');
  padUnderBar();
@@ -467,7 +474,9 @@ function closeOrder(type,id,pay){
  db.orders.push(rec);
  if(type==='table')delete db.open[id];else delete db.delivery[id];
  save();
- printReceipt(rec,false);
+ // принтера в кафе пока нет: печать по умолчанию выключена, включается в «⚙️ Данные».
+ // Ненапечатанный чек не теряется — его можно распечатать из истории заказов.
+ if(db.settings.printReceipt)printReceipt(rec,false);
  show(type==='table'?'tables':'delivery');
 }
 
@@ -1473,6 +1482,8 @@ function renderSettings(){
   `<label>Столов в зале</label><input id="sh" type="number" min="0" value="${+db.settings.hall||0}">`+
   `<label>Столов на улице</label><input id="ss" type="number" min="0" value="${+db.settings.street||0}">`+
   `<label>Текст внизу чека</label><input id="sf" value="${esc(db.settings.footer||'')}">`+
+  `<label style="display:flex;align-items:center;gap:10px"><input id="spr" type="checkbox" style="width:auto;margin:0" ${db.settings.printReceipt?'checked':''}>🖨 Печатать чек сразу после оплаты</label>`+
+  '<p class="small muted">Пока принтера нет — держите выключенным, стол закроется без окна печати. Чек не пропадёт: «📜 История» → заказ → «🖨 Перепечатать».</p>'+
   '<button class="primary" onclick="saveSettings()">Сохранить</button></div>'+
   '<div class="panel"><h2 class="muted">Опасная зона</h2>'+
   '<button onclick="archiveOld()">🧹 Освободить место</button>'+
@@ -1523,6 +1534,7 @@ function saveSettings(){
  db.settings.hall=nh;
  db.settings.street=ns;
  db.settings.footer=document.getElementById('sf').value;
+ db.settings.printReceipt=document.getElementById('spr').checked;
  save();alert('Сохранено. Столов всего: '+tables());show('tables');
 }
 function stamp(){
