@@ -159,7 +159,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="pad" class="ovl hidden" onclick="if(event.target===this)padClose()"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-27.7';
+const APP_VERSION='2026-08-27.8';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -275,6 +275,108 @@ function show(id){
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
+/* ---------- ЗАКАЗЫ ОТ ГОСТЕЙ ----------
+   Гость отправляет заказ со своей таблички, касса раз в несколько секунд
+   спрашивает «что нового». Адрес и ключ хранятся на устройстве, а не в коде:
+   репозиторий публичный. Пока адрес не задан, весь блок молчит и ничего не
+   опрашивает — касса работает как раньше, полностью офлайн. */
+const POLL_MS=6000;
+let guestOrders=[], guestErr='', pollTimer=null, lastSeen=0;
+function srv(){return (db.settings.api||'').replace(/\/+$/,'')}
+function srvKey(){return db.settings.apiKey||''}
+function srvOn(){return !!(srv()&&srvKey())}
+function api(path,opts){
+ opts=opts||{};
+ opts.headers=Object.assign({'Content-Type':'application/json;charset=utf-8','X-Kassa-Key':srvKey()},opts.headers||{});
+ let c=typeof AbortController==='function'?new AbortController():null;
+ if(c){opts.signal=c.signal;setTimeout(()=>c.abort(),12000)}
+ return fetch(srv()+path,opts).then(r=>r.json());
+}
+function startPolling(){
+ if(pollTimer)clearInterval(pollTimer);
+ if(!srvOn())return;
+ pollGuest();
+ pollTimer=setInterval(pollGuest,POLL_MS);
+}
+function pollGuest(){
+ if(!srvOn())return;
+ api('/api/pending').then(r=>{
+  if(!r||!r.ok){guestErr=(r&&r.error)||'сервер ответил непонятно';return paintGuest()}
+  guestErr='';
+  let fresh=(r.orders||[]).filter(o=>o.ts>lastSeen).length;
+  guestOrders=r.orders||[];
+  if(fresh){beep();lastSeen=Math.max.apply(null,guestOrders.map(o=>o.ts))}
+  paintGuest();
+ }).catch(()=>{guestErr='нет связи с сервером';paintGuest()});
+}
+// короткий сигнал без файла: на телефоне он сработает только после первого касания экрана
+function beep(){
+ try{
+  let A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+  let c=new A(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.15;
+  o.start();setTimeout(()=>{o.stop();c.close()},260);
+ }catch(e){}
+}
+// плашка рисуется поверх раздела «Столы», чтобы официант увидел её там, где работает
+function paintGuest(){
+ let box=document.getElementById('guest');
+ if(!box)return;
+ if(!srvOn()){box.innerHTML='';return}
+ let h='';
+ if(guestErr)h+=`<div class="warn">📡 Заказы от гостей: ${esc(guestErr)}. Касса работает как обычно.</div>`;
+ guestOrders.forEach(o=>{
+  let name=tableName(o.t), n=(o.items||[]).reduce((a,x)=>a+(+x.q||0),0);
+  h+=`<div class="panel" style="border:2px solid #16a34a">`+
+     `<div class="row"><span><b>🔔 ${esc(name)}</b><br><span class="small">${qtyText(n)} шт. · ${since(new Date(o.ts).toISOString())}</span></span></div>`;
+  (o.items||[]).forEach(x=>{
+   let m=menuByName(x.n);
+   h+=`<div class="row"><span>${esc(x.n)}${m?'':' <span class="badge b-void">нет в меню</span>'}`+
+      `${x.note?`<br><span class="note">💬 ${esc(x.note)}</span>`:''}</span><b>${qtyText(x.q)}</b></div>`;
+  });
+  h+=`<div class="actions"><button class="primary" onclick="takeGuest('${esc(o.id)}')">✓ Принять на ${esc(name)}</button>`+
+     `<button class="danger" onclick="dropGuest('${esc(o.id)}')">✕ Отклонить</button></div></div>`;
+ });
+ box.innerHTML=h;
+}
+function guestById(id){return guestOrders.find(o=>o.id===id)}
+function takeGuest(id){
+ let o=guestById(id);if(!o)return;
+ let miss=(o.items||[]).filter(x=>!menuByName(x.n)).map(x=>x.n);
+ if(miss.length&&!confirm('В меню кассы нет: '+miss.join(', ')+'.\n\nЭти позиции будут пропущены. Продолжить?'))return;
+ let t=o.t, cur=db.open[t]||{items:[],started:new Date().toISOString()};
+ let added=0, noStock=[];
+ (o.items||[]).forEach(x=>{
+  let m=menuByName(x.n);if(!m)return;
+  let free=freeQty(m.n), q=Math.min(+x.q||0, free===Infinity?(+x.q||0):free);
+  if(!(q>0)){noStock.push(m.n);return}
+  if(q<(+x.q||0))noStock.push(m.n+' (взяли '+qtyText(q)+' из '+qtyText(x.q)+')');
+  let ex=cur.items.find(y=>y.name===m.n&&y.price===+m.p&&!y.note);
+  if(ex&&!x.note)ex.qty=roundQty(ex.qty+q);
+  else cur.items.push({name:m.n,price:+m.p,cost:+m.k||0,qty:roundQty(q),note:x.note||''});
+  added++;
+ });
+ db.open[t]=cur;save();
+ api('/api/ack',{method:'POST',body:JSON.stringify({id:id,action:'accept'})}).catch(()=>{});
+ guestOrders=guestOrders.filter(x=>x.id!==id);
+ if(noStock.length)alert('Не хватило остатка: '+noStock.join(', '));
+ show('tables');orderScreen('table',t);
+}
+function dropGuest(id){
+ if(!confirm('Отклонить заказ? Гость его больше не увидит.'))return;
+ api('/api/ack',{method:'POST',body:JSON.stringify({id:id,action:'reject'})}).catch(()=>{});
+ guestOrders=guestOrders.filter(x=>x.id!==id);
+ paintGuest();
+}
+// выкладываем меню с остатками для гостей; себестоимость наружу не уходит
+function pushMenu(){
+ if(!srvOn())return alert('Сначала укажите адрес сервера и ключ.');
+ let items=db.menu.map(m=>({n:m.n,p:+m.p||0,c:m.c||'Прочее',
+  left:stockOf(m)===null?null:freeQty(m.n)}));
+ api('/api/menu',{method:'POST',body:JSON.stringify({items:items})}).then(r=>{
+  alert(r&&r.ok?('Меню отправлено гостям: '+r.count+' блюд.'):('Не получилось: '+((r&&r.error)||'?')));
+ }).catch(()=>alert('Нет связи с сервером.'));
+}
 /* ---------- СТОЛЫ ---------- */
 function tableCard(i){
  let o=db.open[i],sum=total(o);
@@ -282,7 +384,7 @@ function tableCard(i){
 }
 function renderTables(){
  hideBar();
- let hall=+db.settings.hall||0,street=+db.settings.street||0,h=backupWarning();
+ let hall=+db.settings.hall||0,street=+db.settings.street||0,h='<div id="guest"></div>'+backupWarning();
  if(hall){
   let busy=0;for(let i=1;i<=hall;i++)if(db.open[i])busy++;
   h+=`<div class="sect first">🏠 Зал <span class="small">${busy?busy+' из '+hall+' занято':hall+' столов, все свободны'}</span></div><div class="tables">`;
@@ -309,6 +411,7 @@ function renderTables(){
  let busy=Object.keys(db.open).length,openSum=Object.values(db.open).reduce((s,o)=>s+total(o),0);
  if(busy)h+=`<div class="panel"><div class="row"><span>Занято столов: <b>${busy}</b></span><span>Открытых заказов на <b class="price">${money(openSum)}</b></span></div></div>`;
  document.getElementById('tables').innerHTML=h;
+ paintGuest();
 }
 function since(t){
  if(!t)return'';
@@ -1646,6 +1749,15 @@ function renderSettings(){
   `<label style="display:flex;align-items:center;gap:10px"><input id="spr" type="checkbox" style="width:auto;margin:0" ${db.settings.printReceipt?'checked':''}>🖨 Печатать чек сразу после оплаты</label>`+
   '<p class="small muted">Пока принтера нет — держите выключенным, стол закроется без окна печати. Чек не пропадёт: «📜 История» → заказ → «🖨 Перепечатать».</p>'+
   '<button class="primary" onclick="saveSettings()">Сохранить</button></div>'+
+  '<div class="panel"><h2>Заказы от гостей</h2>'+
+  '<p class="small">Гость сканирует табличку на столе, выбирает блюда и отправляет заказ. Он появится в разделе «🪑 Столы», официант подтверждает. Пока адрес не заполнен, касса ничего не опрашивает и работает полностью офлайн.</p>'+
+  `<label>Адрес сервера</label><input id="sapi" placeholder="https://..." value="${esc(db.settings.api||'')}">`+
+  `<label>Ключ кассы</label><input id="skey" placeholder="выдаётся при настройке сервера" value="${esc(db.settings.apiKey||'')}">`+
+  '<p class="small muted">Ключ хранится только на этом устройстве.</p>'+
+  '<div class="actions"><button class="primary" onclick="saveSettings()">Сохранить</button>'+
+  '<button class="blue" onclick="pushMenu()">📤 Обновить меню для гостей</button>'+
+  '<button onclick="checkSrv()">📡 Проверить связь</button></div>'+
+  '<p class="small muted">Меню гостям нужно обновлять после смены цен, блюд и остатков — само оно не выкладывается.</p></div>'+
   '<div class="panel"><h2 class="muted">Опасная зона</h2>'+
   '<button onclick="archiveOld()">🧹 Освободить место</button>'+
   '<button class="danger" onclick="wipe()">Стереть всю историю заказов</button></div>'+
@@ -1696,7 +1808,17 @@ function saveSettings(){
  db.settings.street=ns;
  db.settings.footer=document.getElementById('sf').value;
  db.settings.printReceipt=document.getElementById('spr').checked;
- save();alert('Сохранено. Столов всего: '+tables());show('tables');
+ let a=document.getElementById('sapi'), k=document.getElementById('skey');
+ if(a)db.settings.api=a.value.trim();
+ if(k)db.settings.apiKey=k.value.trim();
+ save();startPolling();alert('Сохранено. Столов всего: '+tables());show('tables');
+}
+function checkSrv(){
+ let a=document.getElementById('sapi').value.trim().replace(/\/+$/,'');
+ if(!a)return alert('Сначала укажите адрес сервера.');
+ fetch(a+'/api/health').then(r=>r.json()).then(r=>{
+  alert(r&&r.ok?'Связь есть, сервер отвечает.':'Сервер ответил, но непонятно.');
+ }).catch(()=>alert('Связи нет. Проверьте адрес и интернет.'));
 }
 function stamp(){
  let d=new Date(),p=n=>String(n).padStart(2,'0');
@@ -1982,6 +2104,7 @@ setInterval(()=>document.getElementById('clock').textContent=new Date().toLocale
 document.getElementById('clock').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 applyFixed();
 show('tables');
+startPolling();
 </script>
 <script>
 // офлайн-режим: приложение открывается без интернета

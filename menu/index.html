@@ -11,7 +11,7 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
- background:#faf7f2;color:#1f2937;-webkit-text-size-adjust:100%}
+ background:#faf7f2;color:#1f2937;-webkit-text-size-adjust:100%;touch-action:manipulation}
 header{background:#111827;color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 16px;text-align:center}
 header h1{margin:0;font-size:24px;letter-spacing:.3px}
 header p{margin:6px 0 0;font-size:14px;color:#9ca3af}
@@ -26,15 +26,43 @@ nav a{flex:0 0 auto;padding:9px 15px;border-radius:999px;background:#fff;color:#
 nav a:active{background:#111827;color:#fff}
 h2{font-size:20px;margin:26px 0 12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;scroll-margin-top:64px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.dish{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px #0000000f;display:flex;flex-direction:column}
+.dish{position:relative;background:#fff;border-radius:16px;overflow:hidden;
+ box-shadow:0 1px 4px #0000000f;display:flex;flex-direction:column;
+ -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .dish img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f3f4f6}
 .dish .noimg{width:100%;aspect-ratio:1/1;background:#f3f4f6;display:flex;align-items:center;
  justify-content:center;font-size:38px}
 .dish .b{padding:11px 12px 13px;display:flex;flex-direction:column;gap:5px;flex:1}
 .dish .n{font-size:15px;font-weight:600;line-height:1.3}
 .dish .p{font-size:17px;font-weight:700;color:#15803d;margin-top:auto}
+.dish .left{font-size:12px;color:#6b7280}
+.dish.out{opacity:.45}
+.dish.out .left{color:#dc2626;font-weight:700}
+/* кнопки количества появляются, только когда заказ вообще можно отправить */
+.qbar{display:flex;align-items:center;gap:8px;margin-top:8px}
+.qbar button{flex:0 0 38px;height:38px;border:0;border-radius:10px;background:#e5e7eb;
+ font-size:20px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit}
+.qbar button.add{flex:1;background:#16a34a;color:#fff;font-size:15px}
+.qbar .q{flex:1;text-align:center;font-size:17px;font-weight:700}
+.dish.has{outline:2px solid #16a34a}
 footer{text-align:center;color:#6b7280;font-size:14px;padding:28px 16px 10px;line-height:1.7}
 footer b{color:#374151}
+/* нижняя панель с итогом */
+#bar{position:fixed;left:0;right:0;bottom:0;background:#111827;color:#fff;
+ padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;
+ justify-content:space-between;align-items:center;gap:12px;z-index:10;box-shadow:0 -2px 12px #0003}
+#bar.hidden{display:none}
+#bar .s{font-size:13px;color:#9ca3af}
+#bar .m{font-size:20px;font-weight:bold}
+#bar button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:700;
+ background:#16a34a;color:#fff;cursor:pointer;font-family:inherit}
+#bar button:disabled{background:#4b5563}
+.pad{height:calc(40px + env(safe-area-inset-bottom))}
+/* сообщения */
+.msg{border-radius:14px;padding:14px 16px;margin:14px 0;font-size:15px;line-height:1.55}
+.msg.ok{background:#dcfce7;color:#166534}
+.msg.warn{background:#fef3c7;color:#92400e}
+.msg b{font-weight:700}
 </style>
 </head>
 <body>
@@ -44,15 +72,41 @@ footer b{color:#374151}
  <div id="tbl"></div>
 </header>
 <div class="wrap">
+ <div id="note"></div>
  <nav id="nav"></nav>
  <div id="menu"></div>
- <footer>
-  Цены указаны в юанях за порцию.<br>
-  <span id="foot">Для заказа <b>позовите официанта</b> — он примет заказ за вашим столом.</span>
- </footer>
+ <footer><span id="foot">Для заказа <b>позовите официанта</b> — он примет заказ за вашим столом.</span></footer>
+ <div class="pad"></div>
 </div>
+<div id="bar" class="hidden"></div>
 <script>
-// Меню витрины. При изменении цен в кассе — поправить здесь же.
+/* Меню для гостей.
+ *
+ * Страница лежит на github.io — он в Китае открывается без VPN.
+ * Сервер заказов живёт на workers.dev, а его в Китае блокируют. Поэтому:
+ *  - меню всегда рисуется сразу из копии, вшитой в страницу: гость видит блюда
+ *    и цены в любом случае;
+ *  - если сервер доступен, меню обновляется живым (с остатками) и включается
+ *    отправка заказа;
+ *  - если недоступен — честно пишем «позовите официанта», а не крутим колесо.
+ *
+ * Цены отсюда НИКОГДА не уходят на сервер: отправляются только названия,
+ * количество и пожелания. Считает касса по своему меню.
+ */
+var API = 'https://plov-kassa.ecochelovechik.workers.dev';
+
+// Номера столов должны совпадать с настройками кассы («⚙️ Данные»).
+var HALL = 9, STREET = 4;
+function tableName(i){
+ i = +i;
+ if(!i || i < 1 || i > HALL + STREET) return '';
+ return i > HALL ? 'Улица ' + (i - HALL) : 'Стол ' + i;
+}
+var TNUM = +((location.search.match(/[?&]t=(\d+)/) || [])[1] || 0);
+var TABLE = tableName(TNUM);
+
+// Запасная копия меню — на случай, когда сервер недоступен.
+// Живое меню приходит из кассы, здесь только подстраховка и фотографии.
 var MENU = [
  ['Основные', [
   ['Плов', 40, 'plov'],
@@ -87,43 +141,165 @@ var MENU = [
  ]]
 ];
 
-// Стол берётся из адреса: ?t=1..13. Числа должны совпадать с настройками кассы
-// («⚙️ Данные» → столов в зале / на улице), иначе таблички разъедутся с залом.
-var HALL = 9, STREET = 4;
-function tableName(i){
- i = +i;
- if(!i || i < 1 || i > HALL + STREET) return '';
- return i > HALL ? 'Улица ' + (i - HALL) : 'Стол ' + i;
-}
-var TABLE = tableName((location.search.match(/[?&]t=(\d+)/) || [])[1]);
-
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){
  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function qtyText(q){q=+q||0;return Number.isInteger(q)?String(q):q.toFixed(1).replace('.',',')}
 
-var nav = '', body = '';
-MENU.forEach(function(group, gi){
- var title = group[0], dishes = group[1], id = 'g' + gi;
- nav += '<a href="#' + id + '">' + esc(title) + '</a>';
- body += '<h2 id="' + id + '">' + esc(title) + '</h2><div class="grid">';
- dishes.forEach(function(d){
-  var name = d[0], price = d[1], img = d[2];
-  body += '<div class="dish">' +
-   (img ? '<img src="../dishes/' + img + '.jpg" alt="' + esc(name) + '" loading="lazy" ' +
-          'onerror="this.outerHTML=&quot;<div class=\\&quot;noimg\\&quot;>🍽️</div>&quot;">'
-        : '<div class="noimg">🥤</div>') +
-   '<div class="b"><div class="n">' + esc(name) + '</div>' +
-   '<div class="p">' + price + ' ¥</div></div></div>';
+// фото ищем по названию: они лежат рядом со страницей, с сервера не приходят
+var PHOTO = {};
+MENU.forEach(function(g){g[1].forEach(function(d){if(d[2])PHOTO[d[0]]=d[2]})});
+
+// [{c:категория, n:название, p:цена, left:остаток или null}]
+var dishes = [];
+MENU.forEach(function(g){g[1].forEach(function(d){
+ dishes.push({c:g[0], n:d[0], p:d[1], left:null});
+})});
+
+var canOrder = false;      // сервер ответил — заказ можно отправить
+var cart = {};             // название -> количество
+var sending = false;
+
+function cartCount(){var s=0;for(var k in cart)s+=cart[k];return s}
+function cartSum(){
+ var s=0;
+ dishes.forEach(function(d){if(cart[d.n])s+=d.p*cart[d.n]});
+ return s;
+}
+function money(v){return (Math.round(v*100)/100).toFixed(2) + ' ¥'}
+
+function leftOf(d){
+ if(d.left === null || d.left === undefined) return Infinity;
+ return Math.max(0, d.left - (cart[d.n] || 0));
+}
+
+function render(){
+ var nav = '', body = '', cats = [];
+ dishes.forEach(function(d){if(cats.indexOf(d.c) < 0) cats.push(d.c)});
+ cats.forEach(function(cat, gi){
+  var id = 'g' + gi;
+  nav += '<a href="#' + id + '">' + esc(cat) + '</a>';
+  body += '<h2 id="' + id + '">' + esc(cat) + '</h2><div class="grid">';
+  dishes.forEach(function(d){
+   if(d.c !== cat) return;
+   var img = PHOTO[d.n];
+   var out = (d.left !== null && d.left !== undefined && d.left <= 0);
+   var have = cart[d.n] || 0;
+   body += '<div class="dish' + (out ? ' out' : '') + (have ? ' has' : '') + '">' +
+    (img ? '<img src="../dishes/' + img + '.jpg" alt="' + esc(d.n) + '" loading="lazy" ' +
+           'onerror="this.outerHTML=&quot;<div class=\\&quot;noimg\\&quot;>🍽️</div>&quot;">'
+         : '<div class="noimg">🥤</div>') +
+    '<div class="b"><div class="n">' + esc(d.n) + '</div>' +
+    '<div class="p">' + d.p + ' ¥</div>' +
+    (d.left === null || d.left === undefined ? '' :
+      '<div class="left">' + (out ? 'закончилось' : 'осталось ' + qtyText(d.left)) + '</div>') +
+    (canOrder && !out ? qbar(d, have) : '') +
+    '</div></div>';
+  });
+  body += '</div>';
  });
- body += '</div>';
-});
-document.getElementById('nav').innerHTML = nav;
-document.getElementById('menu').innerHTML = body;
-if (TABLE) {
+ document.getElementById('nav').innerHTML = nav;
+ document.getElementById('menu').innerHTML = body;
+ renderBar();
+}
+
+function qbar(d, have){
+ var name = esc(d.n).replace(/'/g, '&#39;');
+ if(!have) return '<div class="qbar"><button class="add" onclick="add(\'' + name + '\',1)">Добавить</button></div>';
+ return '<div class="qbar">' +
+  '<button onclick="add(\'' + name + '\',-1)">−</button>' +
+  '<span class="q">' + qtyText(have) + '</span>' +
+  '<button onclick="add(\'' + name + '\',1)">+</button></div>';
+}
+
+function add(name, d){
+ var dish = null;
+ dishes.forEach(function(x){if(x.n === name) dish = x});
+ if(!dish) return;
+ if(d > 0 && leftOf(dish) < 1){ alert('«' + dish.n + '» закончилось.'); return; }
+ cart[name] = (cart[name] || 0) + d;
+ if(cart[name] <= 0) delete cart[name];
+ render();
+}
+
+function renderBar(){
+ var bar = document.getElementById('bar'), n = cartCount();
+ if(!canOrder || !n){ bar.className = 'hidden'; return; }
+ bar.className = '';
+ bar.innerHTML = '<span><span class="s">' + esc(TABLE) + ' · ' + n + ' шт.</span><br>' +
+  '<span class="m">' + money(cartSum()) + '</span></span>' +
+  '<button id="send"' + (sending ? ' disabled' : '') + ' onclick="send()">' +
+  (sending ? 'Отправляю…' : 'Отправить официанту') + '</button>';
+}
+
+function note(kind, html){
+ document.getElementById('note').innerHTML = '<div class="msg ' + kind + '">' + html + '</div>';
+}
+
+function send(){
+ if(sending || !cartCount()) return;
+ sending = true; renderBar();
+ // на сервер уходят только названия и количество, цен здесь нет намеренно
+ var items = [];
+ dishes.forEach(function(d){ if(cart[d.n]) items.push({n: d.n, q: cart[d.n]}); });
+
+ fetchTimeout(API + '/api/order', 12000, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json;charset=utf-8'},
+  body: JSON.stringify({t: TNUM, items: items})
+ }).then(function(r){ return r.json(); }).then(function(res){
+  sending = false;
+  if(res && res.ok){
+   cart = {};
+   note('ok', '✅ <b>Заказ отправлен официанту.</b> Он подойдёт подтвердить. ' +
+              'Если что-то нужно изменить — скажите ему.');
+   render();
+   window.scrollTo(0, 0);
+  }else{
+   sending = false; renderBar();
+   note('warn', '⚠️ Заказ не приняли: ' + esc((res && res.error) || 'непонятная ошибка') +
+                '.<br><b>Позовите официанта</b> — он примет заказ.');
+   window.scrollTo(0, 0);
+  }
+ }).catch(function(){
+  sending = false; renderBar();
+  note('warn', '⚠️ <b>Не получилось отправить заказ.</b><br>' +
+               '<b>Позовите официанта</b> — он примет заказ за вашим столом.');
+  window.scrollTo(0, 0);
+ });
+}
+
+function fetchTimeout(url, ms, opts){
+ opts = opts || {};
+ if(typeof AbortController === 'function'){
+  var c = new AbortController();
+  opts.signal = c.signal;
+  setTimeout(function(){ c.abort(); }, ms);
+ }
+ return fetch(url, opts);
+}
+
+// Живое меню из кассы. Не вышло — молча остаёмся на вшитой копии:
+// гость всё равно видит блюда и цены, просто не может отправить заказ сам.
+function loadLive(){
+ if(!TNUM) return;   // без номера стола заказ отправлять некуда
+ fetchTimeout(API + '/api/menu', 8000).then(function(r){ return r.json(); }).then(function(res){
+  if(!res || !res.ok || !res.items || !res.items.length) return;
+  dishes = res.items.map(function(m){
+   return {c: m.c || 'Прочее', n: m.n, p: m.p, left: (m.left === null || m.left === undefined) ? null : m.left};
+  });
+  canOrder = true;
+  render();
+ }).catch(function(){ /* сервер недоступен — работаем как витрина */ });
+}
+
+if(TABLE){
  document.getElementById('tbl').innerHTML = '<span class="tbl">' + esc(TABLE) + '</span>';
  document.title = 'Центр плова — меню · ' + TABLE;
  document.getElementById('foot').innerHTML =
   'Для заказа <b>позовите официанта</b> и назовите ваше место: <b>' + esc(TABLE) + '</b>.';
 }
+render();
+loadLive();
 </script>
 </body>
 </html>
