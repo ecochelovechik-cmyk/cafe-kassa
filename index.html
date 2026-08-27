@@ -70,21 +70,30 @@ input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;
    закрывает пол-экрана и открывается с задержкой. */
 .ovl{position:fixed;inset:0;background:#00000099;z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .ovl.hidden{display:none}
-.pad{background:#fff;width:100%;max-width:430px;border-radius:20px 20px 0 0;
+.npad{background:#fff;width:100%;max-width:430px;border-radius:20px 20px 0 0;
+ max-height:100%;overflow:auto;
  padding:16px 14px calc(14px + env(safe-area-inset-bottom))}
-.pad .pt{font-size:15px;color:#6b7280;text-align:center}
-.pad .pn{font-size:19px;font-weight:700;text-align:center;margin-top:2px}
-.pad .pv{font-size:40px;font-weight:800;text-align:center;padding:8px;margin-top:10px;
+.npad .pt{font-size:15px;color:#6b7280;text-align:center}
+.npad .pn{font-size:19px;font-weight:700;text-align:center;margin-top:2px}
+.npad .pv{font-size:34px;font-weight:800;text-align:center;padding:5px;margin-top:8px;
  border:2px solid #e5e7eb;border-radius:14px;letter-spacing:1px}
-.pad .ph{font-size:13px;color:#6b7280;text-align:center;margin-top:6px}
-.pad .quick{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:11px}
-.pad .quick button{padding:15px 0;font-size:17px;font-weight:700;background:#dcfce7;color:#166534}
-.pad .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
-.pad .keys button{padding:17px 0;font-size:24px;font-weight:600;background:#f3f4f6}
-.pad .pv .pu{font-size:22px;color:#6b7280;margin-left:6px;font-weight:600}
-.pad .acts{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:8px;margin-top:11px}
-.pad .acts.two{grid-template-columns:1fr 1.4fr}
-.pad .acts button{padding:15px 0;font-size:16px}
+.npad .ph{font-size:13px;color:#6b7280;text-align:center;margin-top:6px}
+.npad .quick{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:9px}
+.npad .quick button{padding:12px 0;font-size:17px;font-weight:700;background:#dcfce7;color:#166534}
+.npad .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:7px}
+.npad .keys button{padding:13px 0;font-size:22px;font-weight:600;background:#f3f4f6}
+.npad .pv .pu{font-size:22px;color:#6b7280;margin-left:6px;font-weight:600}
+.npad .acts{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:8px;margin-top:9px}
+.npad .acts.two{grid-template-columns:1fr 1.4fr}
+.npad .acts button{padding:13px 0;font-size:16px}
+/* низкие экраны (старый iPhone SE): ужимаем, чтобы «Готово» не уехало за край */
+@media (max-height:640px){
+ .npad .ph{display:none}
+ .npad .pv{font-size:27px;margin-top:6px}
+ .npad .quick button{padding:9px 0}
+ .npad .keys button{padding:9px 0;font-size:20px}
+ .npad .acts button{padding:11px 0}
+}
 #bar .s{font-size:13px;color:#9ca3af}
 #bar .m{font-size:20px;font-weight:bold}
 #bar button{padding:12px 16px}
@@ -147,7 +156,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="pad" class="ovl hidden" onclick="if(event.target===this)padClose()"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-27.4';
+const APP_VERSION='2026-08-27.6';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -415,7 +424,7 @@ function renderPad(){
  let acts=(p.onRemove?`<button class="danger" onclick="padRemove()">${esc(p.removeLabel||'Убрать')}</button>`:'')+
   `<button onclick="padClose()">Отмена</button><button class="primary" onclick="padOk()">Готово</button>`;
  document.getElementById('pad').innerHTML=
-  `<div class="pad" onclick="event.stopPropagation()">`+
+  `<div class="npad" onclick="event.stopPropagation()">`+
   `<div class="pt">${esc(p.title)}</div>`+
   (p.name?`<div class="pn">${esc(p.name)}</div>`:'')+
   `<div class="pv">${esc(p.v||'0')}${p.unit?`<span class="pu">${esc(p.unit)}</span>`:''}</div>`+
