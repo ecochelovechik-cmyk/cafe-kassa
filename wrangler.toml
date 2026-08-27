@@ -9,4 +9,4 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "plov-kassa"
-database_id = "ЗАПОЛНИТСЯ_ПРИ_СОЗДАНИИ_БАЗЫ"
+database_id = "18c1f0c4-a476-4d05-ad1d-cc66263a2282"
