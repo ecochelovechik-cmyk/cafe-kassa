@@ -27,7 +27,7 @@ nav a:active{background:#111827;color:#fff}
 h2{font-size:20px;margin:26px 0 12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;scroll-margin-top:64px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .dish{position:relative;background:#fff;border-radius:16px;overflow:hidden;
- box-shadow:0 1px 4px #0000000f;display:flex;flex-direction:column;
+ box-shadow:0 1px 4px #0000000f;display:flex;flex-direction:column;cursor:pointer;
  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .dish img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f3f4f6}
 .dish .noimg{width:100%;aspect-ratio:1/1;background:#f3f4f6;display:flex;align-items:center;
@@ -63,6 +63,38 @@ footer b{color:#374151}
 .msg.ok{background:#dcfce7;color:#166534}
 .msg.warn{background:#fef3c7;color:#92400e}
 .msg b{font-weight:700}
+/* переключатель языков */
+.langs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.langs button{border:0;border-radius:999px;padding:7px 13px;font-size:14px;font-family:inherit;
+ background:#374151;color:#d1d5db;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.langs button.on{background:#fff;color:#111827;font-weight:700}
+/* карточка блюда */
+.dovl{position:fixed;inset:0;background:#00000099;z-index:20;display:flex;
+ align-items:flex-end;justify-content:center}
+.dovl.hidden{display:none}
+.dcard{background:#fff;width:100%;max-width:460px;border-radius:22px 22px 0 0;
+ max-height:92%;overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+.dcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#f3f4f6}
+.dcard .noph{width:100%;aspect-ratio:4/3;background:#f3f4f6;display:flex;align-items:center;
+ justify-content:center;font-size:60px}
+.dcard .body{padding:16px 18px 0}
+.dcard h3{margin:0;font-size:23px;line-height:1.25}
+.dcard .cat{font-size:13px;color:#6b7280;margin-top:4px}
+.dcard .row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:12px}
+.dcard .pr{font-size:26px;font-weight:800;color:#15803d}
+.dcard .st{font-size:14px;color:#6b7280}
+.dcard .st.zero{color:#dc2626;font-weight:700}
+.dcard h4{margin:18px 0 8px;font-size:15px;color:#374151;text-transform:uppercase;letter-spacing:.4px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chips span{background:#f3f4f6;border-radius:999px;padding:7px 13px;font-size:15px;color:#374151}
+.dcard .nocomp{font-size:14px;color:#9ca3af;line-height:1.5}
+.dcard .acts{display:flex;gap:9px;padding:18px 18px 0}
+.dcard .acts button{flex:1;border:0;border-radius:12px;padding:15px 0;font-size:16px;
+ font-weight:700;font-family:inherit;cursor:pointer;background:#e5e7eb;color:#374151}
+.dcard .acts button.add{background:#16a34a;color:#fff}
+.dcard .acts .qwrap{flex:1;display:flex;align-items:center;gap:9px}
+.dcard .acts .qwrap button{flex:0 0 46px;font-size:22px}
+.dcard .acts .qwrap .q{flex:1;text-align:center;font-size:20px;font-weight:800}
 </style>
 </head>
 <body>
@@ -70,15 +102,18 @@ footer b{color:#374151}
  <h1>🍚 Центр плова</h1>
  <p>Узбекская и таджикская кухня</p>
  <div id="tbl"></div>
+ <div class="langs" id="langs"></div>
 </header>
 <div class="wrap">
  <div id="note"></div>
  <nav id="nav"></nav>
  <div id="menu"></div>
- <footer><span id="foot">Для заказа <b>позовите официанта</b> — он примет заказ за вашим столом.</span></footer>
+ <footer><span id="foot"></span></footer>
  <div class="pad"></div>
 </div>
 <div id="bar" class="hidden"></div>
+<div id="dish" class="dovl hidden" onclick="if(event.target===this)closeDish()"></div>
+<script src="i18n.js"></script>
 <script>
 /* Меню для гостей.
  *
@@ -90,20 +125,17 @@ footer b{color:#374151}
  *    отправка заказа;
  *  - если недоступен — честно пишем «позовите официанта», а не крутим колесо.
  *
- * Цены отсюда НИКОГДА не уходят на сервер: отправляются только названия,
- * количество и пожелания. Считает касса по своему меню.
+ * Цены отсюда НИКОГДА не уходят на сервер: отправляются только названия
+ * и количество. Считает касса по своему меню.
+ *
+ * Тексты, названия блюд и составы — в i18n.js.
  */
 var API = 'https://plov-kassa.ecochelovechik.workers.dev';
 
 // Номера столов должны совпадать с настройками кассы («⚙️ Данные»).
 var HALL = 9, STREET = 4;
-function tableName(i){
- i = +i;
- if(!i || i < 1 || i > HALL + STREET) return '';
- return i > HALL ? 'Улица ' + (i - HALL) : 'Стол ' + i;
-}
 var TNUM = +((location.search.match(/[?&]t=(\d+)/) || [])[1] || 0);
-var TABLE = tableName(TNUM);
+var TABLE = '';   // считается после выбора языка
 
 // Запасная копия меню — на случай, когда сервер недоступен.
 // Живое меню приходит из кассы, здесь только подстраховка и фотографии.
@@ -144,54 +176,110 @@ var MENU = [
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){
  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function qtyText(q){q=+q||0;return Number.isInteger(q)?String(q):q.toFixed(1).replace('.',',')}
+function key(n){return esc(n).replace(/'/g,'&#39;')}
+
+/* ---------- ЯЗЫК ----------
+   Выбор гостя запоминается на его телефоне: сменил один раз — дальше
+   открывается сразу на своём. Если не выбирал, берём язык телефона. */
+function detectLang(){
+ try{ var saved = localStorage.getItem('plov_lang'); if(saved && UI[saved]) return saved; }catch(e){}
+ var n = (navigator.language || 'ru').toLowerCase();
+ var by = ['zh','en','es','fr','pt','ru'];
+ for(var i = 0; i < by.length; i++) if(n.indexOf(by[i]) === 0) return by[i];
+ return 'ru';
+}
+var LANG = detectLang();
+function t(k){ return (UI[LANG] && UI[LANG][k]) || UI.ru[k] || k; }
+function dishName(n){ var d = DISHNAME[n]; return (LANG !== 'ru' && d && d[LANG]) || n; }
+function catName(c){ var d = CAT[c]; return (LANG !== 'ru' && d && d[LANG]) || c; }
+function compOf(n){ var c = COMP[n]; if(!c) return null; return c[LANG] || c.en || c.ru || null; }
+
+function tableName(i){
+ i = +i;
+ if(!i || i < 1 || i > HALL + STREET) return '';
+ var tpl = i > HALL ? t('street') : t('table');
+ var num = i > HALL ? (i - HALL) : i;
+ return tpl.replace('{n}', num);
+}
+
+function setLang(l){
+ if(!UI[l]) return;
+ LANG = l;
+ try{ localStorage.setItem('plov_lang', l); }catch(e){}
+ applyLang();
+}
+function renderLangs(){
+ document.getElementById('langs').innerHTML = LANGS.map(function(l){
+  return '<button class="' + (l[0] === LANG ? 'on' : '') + '" onclick="setLang(&quot;' +
+   l[0] + '&quot;)">' + esc(l[1]) + '</button>';
+ }).join('');
+}
+function applyLang(){
+ document.documentElement.lang = LANG;
+ document.querySelector('header p').textContent = t('sub');
+ TABLE = tableName(TNUM);
+ document.getElementById('tbl').innerHTML = TABLE ? '<span class="tbl">' + esc(TABLE) + '</span>' : '';
+ document.title = 'Центр плова' + (TABLE ? ' · ' + TABLE : '');
+ document.getElementById('foot').innerHTML = TABLE
+  ? t('footTable') + '<b>' + esc(TABLE) + '</b>' + t('dot')
+  : t('footPlain');
+ renderLangs();
+ render();
+ if(openName) openDish(openName);
+}
 
 // фото ищем по названию: они лежат рядом со страницей, с сервера не приходят
 var PHOTO = {};
-MENU.forEach(function(g){g[1].forEach(function(d){if(d[2])PHOTO[d[0]]=d[2]})});
+MENU.forEach(function(g){ g[1].forEach(function(d){ if(d[2]) PHOTO[d[0]] = d[2]; }); });
 
-// [{c:категория, n:название, p:цена, left:остаток или null}]
+// Названия внутри всегда русские — это ключ и в кассе, и в переводах.
+// На экран идёт dishName().
 var dishes = [];
-MENU.forEach(function(g){g[1].forEach(function(d){
- dishes.push({c:g[0], n:d[0], p:d[1], left:null});
-})});
+MENU.forEach(function(g){ g[1].forEach(function(d){
+ dishes.push({c: g[0], n: d[0], p: d[1], left: null});
+}); });
 
 var canOrder = false;      // сервер ответил — заказ можно отправить
 var cart = {};             // название -> количество
 var sending = false;
+var openName = '';         // какое блюдо открыто карточкой
 
-function cartCount(){var s=0;for(var k in cart)s+=cart[k];return s}
+function cartCount(){ var s = 0; for(var k in cart) s += cart[k]; return s; }
 function cartSum(){
- var s=0;
- dishes.forEach(function(d){if(cart[d.n])s+=d.p*cart[d.n]});
+ var s = 0;
+ dishes.forEach(function(d){ if(cart[d.n]) s += d.p * cart[d.n]; });
  return s;
 }
-function money(v){return (Math.round(v*100)/100).toFixed(2) + ' ¥'}
+function money(v){ return (Math.round(v * 100) / 100).toFixed(2) + ' ¥'; }
+function byName(n){ var r = null; dishes.forEach(function(d){ if(d.n === n) r = d; }); return r; }
 
 function leftOf(d){
- if(d.left === null || d.left === undefined) return Infinity;
+ if(!d || d.left === null || d.left === undefined) return Infinity;
  return Math.max(0, d.left - (cart[d.n] || 0));
+}
+function isOut(d){ return d.left !== null && d.left !== undefined && d.left <= 0; }
+function stockLine(d){
+ if(d.left === null || d.left === undefined) return '';
+ return d.left <= 0 ? t('out') : t('left') + ' ' + qtyText(d.left);
 }
 
 function render(){
  var nav = '', body = '', cats = [];
- dishes.forEach(function(d){if(cats.indexOf(d.c) < 0) cats.push(d.c)});
+ dishes.forEach(function(d){ if(cats.indexOf(d.c) < 0) cats.push(d.c); });
  cats.forEach(function(cat, gi){
   var id = 'g' + gi;
-  nav += '<a href="#' + id + '">' + esc(cat) + '</a>';
-  body += '<h2 id="' + id + '">' + esc(cat) + '</h2><div class="grid">';
+  nav += '<a href="#' + id + '">' + esc(catName(cat)) + '</a>';
+  body += '<h2 id="' + id + '">' + esc(catName(cat)) + '</h2><div class="grid">';
   dishes.forEach(function(d){
    if(d.c !== cat) return;
-   var img = PHOTO[d.n];
-   var out = (d.left !== null && d.left !== undefined && d.left <= 0);
-   var have = cart[d.n] || 0;
-   body += '<div class="dish' + (out ? ' out' : '') + (have ? ' has' : '') + '">' +
-    (img ? '<img src="../dishes/' + img + '.jpg" alt="' + esc(d.n) + '" loading="lazy" ' +
-           'onerror="this.outerHTML=&quot;<div class=\\&quot;noimg\\&quot;>🍽️</div>&quot;">'
+   var img = PHOTO[d.n], out = isOut(d), have = cart[d.n] || 0;
+   body += '<div class="dish' + (out ? ' out' : '') + (have ? ' has' : '') +
+    '" onclick="openDish(&quot;' + key(d.n) + '&quot;)">' +
+    (img ? '<img src="../dishes/' + img + '.jpg" alt="" loading="lazy" onerror="this.remove()">'
          : '<div class="noimg">🥤</div>') +
-    '<div class="b"><div class="n">' + esc(d.n) + '</div>' +
+    '<div class="b"><div class="n">' + esc(dishName(d.n)) + '</div>' +
     '<div class="p">' + d.p + ' ¥</div>' +
-    (d.left === null || d.left === undefined ? '' :
-      '<div class="left">' + (out ? 'закончилось' : 'осталось ' + qtyText(d.left)) + '</div>') +
+    (stockLine(d) ? '<div class="left">' + esc(stockLine(d)) + '</div>' : '') +
     (canOrder && !out ? qbar(d, have) : '') +
     '</div></div>';
   });
@@ -203,32 +291,76 @@ function render(){
 }
 
 function qbar(d, have){
- var name = esc(d.n).replace(/'/g, '&#39;');
- if(!have) return '<div class="qbar"><button class="add" onclick="add(\'' + name + '\',1)">Добавить</button></div>';
+ var k = key(d.n), stop = 'event.stopPropagation();';
+ if(!have) return '<div class="qbar"><button class="add" onclick="' + stop +
+  'add(&quot;' + k + '&quot;,1)">' + esc(t('add')) + '</button></div>';
  return '<div class="qbar">' +
-  '<button onclick="add(\'' + name + '\',-1)">−</button>' +
+  '<button onclick="' + stop + 'add(&quot;' + k + '&quot;,-1)">−</button>' +
   '<span class="q">' + qtyText(have) + '</span>' +
-  '<button onclick="add(\'' + name + '\',1)">+</button></div>';
+  '<button onclick="' + stop + 'add(&quot;' + k + '&quot;,1)">+</button></div>';
 }
 
 function add(name, d){
- var dish = null;
- dishes.forEach(function(x){if(x.n === name) dish = x});
+ var dish = byName(name);
  if(!dish) return;
- if(d > 0 && leftOf(dish) < 1){ alert('«' + dish.n + '» закончилось.'); return; }
+ if(d > 0 && leftOf(dish) < 1){ alert(dishName(dish.n) + ' — ' + t('out')); return; }
  cart[name] = (cart[name] || 0) + d;
  if(cart[name] <= 0) delete cart[name];
  render();
+ if(openName) openDish(openName);
+}
+
+/* ---------- КАРТОЧКА БЛЮДА ----------
+   Состав берётся из COMP в i18n.js и заполняется только по словам Рашида.
+   Нет состава — показываем «уточните у официанта», а не выдумываем. */
+function openDish(name){
+ var d = byName(name);
+ if(!d) return;
+ openName = name;
+ var img = PHOTO[name], out = isOut(d), have = cart[name] || 0;
+ var comp = compOf(name), k = key(name);
+
+ var h = '<div class="dcard" onclick="event.stopPropagation()">' +
+  (img ? '<img class="ph" src="../dishes/' + img + '.jpg" alt="" onerror="this.remove()">'
+       : '<div class="noph">🍽️</div>') +
+  '<div class="body">' +
+  '<h3>' + esc(dishName(name)) + '</h3>' +
+  '<div class="cat">' + esc(catName(d.c)) + (LANG !== 'ru' ? ' · ' + esc(name) : '') + '</div>' +
+  '<div class="row"><span class="pr">' + d.p + ' ¥</span>' +
+  (stockLine(d) ? '<span class="st' + (out ? ' zero' : '') + '">' + esc(stockLine(d)) + '</span>' : '') +
+  '</div>' +
+  '<h4>' + esc(t('comp')) + '</h4>' +
+  (comp && comp.length
+    ? '<div class="chips">' + comp.map(function(x){ return '<span>' + esc(x) + '</span>'; }).join('') + '</div>'
+    : '<div class="nocomp">' + esc(t('noComp')) + '</div>') +
+  '</div><div class="acts">' +
+  (canOrder && !out
+    ? (have
+        ? '<div class="qwrap"><button onclick="add(&quot;' + k + '&quot;,-1)">−</button>' +
+          '<span class="q">' + qtyText(have) + '</span>' +
+          '<button onclick="add(&quot;' + k + '&quot;,1)">+</button></div>'
+        : '<button class="add" onclick="add(&quot;' + k + '&quot;,1)">' + esc(t('add')) + '</button>')
+    : '') +
+  '<button onclick="closeDish()">' + esc(t('close')) + '</button>' +
+  '</div></div>';
+
+ var box = document.getElementById('dish');
+ box.innerHTML = h;
+ box.classList.remove('hidden');
+}
+function closeDish(){
+ openName = '';
+ document.getElementById('dish').classList.add('hidden');
 }
 
 function renderBar(){
  var bar = document.getElementById('bar'), n = cartCount();
  if(!canOrder || !n){ bar.className = 'hidden'; return; }
  bar.className = '';
- bar.innerHTML = '<span><span class="s">' + esc(TABLE) + ' · ' + n + ' шт.</span><br>' +
+ bar.innerHTML = '<span><span class="s">' + esc(TABLE) + ' · ' + n + ' ' + esc(t('pcs')) + '</span><br>' +
   '<span class="m">' + money(cartSum()) + '</span></span>' +
   '<button id="send"' + (sending ? ' disabled' : '') + ' onclick="send()">' +
-  (sending ? 'Отправляю…' : 'Отправить официанту') + '</button>';
+  esc(sending ? t('sending') : t('send')) + '</button>';
 }
 
 function note(kind, html){
@@ -250,20 +382,18 @@ function send(){
   sending = false;
   if(res && res.ok){
    cart = {};
-   note('ok', '✅ <b>Заказ отправлен официанту.</b> Он подойдёт подтвердить. ' +
-              'Если что-то нужно изменить — скажите ему.');
+   closeDish();
+   note('ok', t('sent'));
    render();
    window.scrollTo(0, 0);
   }else{
-   sending = false; renderBar();
-   note('warn', '⚠️ Заказ не приняли: ' + esc((res && res.error) || 'непонятная ошибка') +
-                '.<br><b>Позовите официанта</b> — он примет заказ.');
+   renderBar();
+   note('warn', t('failOrder') + esc((res && res.error) || '?') + '.<br>' + t('callWaiter'));
    window.scrollTo(0, 0);
   }
  }).catch(function(){
   sending = false; renderBar();
-  note('warn', '⚠️ <b>Не получилось отправить заказ.</b><br>' +
-               '<b>Позовите официанта</b> — он примет заказ за вашим столом.');
+  note('warn', t('failSend'));
   window.scrollTo(0, 0);
  });
 }
@@ -285,20 +415,16 @@ function loadLive(){
  fetchTimeout(API + '/api/menu', 8000).then(function(r){ return r.json(); }).then(function(res){
   if(!res || !res.ok || !res.items || !res.items.length) return;
   dishes = res.items.map(function(m){
-   return {c: m.c || 'Прочее', n: m.n, p: m.p, left: (m.left === null || m.left === undefined) ? null : m.left};
+   return {c: m.c || 'Прочее', n: m.n, p: m.p,
+           left: (m.left === null || m.left === undefined) ? null : m.left};
   });
   canOrder = true;
   render();
+  if(openName) openDish(openName);
  }).catch(function(){ /* сервер недоступен — работаем как витрина */ });
 }
 
-if(TABLE){
- document.getElementById('tbl').innerHTML = '<span class="tbl">' + esc(TABLE) + '</span>';
- document.title = 'Центр плова — меню · ' + TABLE;
- document.getElementById('foot').innerHTML =
-  'Для заказа <b>позовите официанта</b> и назовите ваше место: <b>' + esc(TABLE) + '</b>.';
-}
-render();
+applyLang();
 loadLive();
 </script>
 </body>
