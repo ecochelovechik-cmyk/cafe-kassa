@@ -156,27 +156,27 @@ var DISHNAME = {
 var COMP = {
   // со слов Рашида 27.08.2026
   'Казан-кебаб': {
-    ru: ['баранина', 'жареный картофель', 'специи'],
-    en: ['lamb', 'fried potatoes', 'spices'],
-    zh: ['羊肉', '炸土豆', '香料'],
-    es: ['cordero', 'patatas fritas', 'especias'],
-    fr: ['agneau', 'pommes de terre frites', 'épices'],
-    pt: ['cordeiro', 'batatas fritas', 'especiarias']
+    ru: ['баранина', 'жареный картофель', 'соль', 'перец чёрный', 'зира'],
+    en: ['lamb', 'fried potatoes', 'salt', 'black pepper', 'cumin'],
+    zh: ['羊肉', '炸土豆', '盐', '黑胡椒', '孜然'],
+    es: ['cordero', 'patatas fritas', 'sal', 'pimienta negra', 'comino'],
+    fr: ['agneau', 'pommes de terre frites', 'sel', 'poivre noir', 'cumin'],
+    pt: ['cordeiro', 'batatas fritas', 'sal', 'pimenta-do-reino', 'cominho']
   },
   'Шурпа': {
-    ru: ['говядина', 'лук', 'морковь', 'картофель', 'помидор', 'болгарский перец', 'нут', 'специи'],
-    en: ['beef', 'onion', 'carrot', 'potato', 'tomato', 'bell pepper', 'chickpeas', 'spices'],
-    zh: ['牛肉', '洋葱', '胡萝卜', '土豆', '番茄', '甜椒', '鹰嘴豆', '香料'],
-    es: ['ternera', 'cebolla', 'zanahoria', 'patata', 'tomate', 'pimiento', 'garbanzos', 'especias'],
-    fr: ['bœuf', 'oignon', 'carotte', 'pomme de terre', 'tomate', 'poivron', 'pois chiches', 'épices'],
-    pt: ['carne bovina', 'cebola', 'cenoura', 'batata', 'tomate', 'pimentão', 'grão-de-bico', 'especiarias']
+    ru: ['говядина', 'лук', 'морковь', 'картофель', 'помидор', 'болгарский перец', 'нут', 'соль', 'перец чёрный', 'зира'],
+    en: ['beef', 'onion', 'carrot', 'potato', 'tomato', 'bell pepper', 'chickpeas', 'salt', 'black pepper', 'cumin'],
+    zh: ['牛肉', '洋葱', '胡萝卜', '土豆', '番茄', '甜椒', '鹰嘴豆', '盐', '黑胡椒', '孜然'],
+    es: ['ternera', 'cebolla', 'zanahoria', 'patata', 'tomate', 'pimiento', 'garbanzos', 'sal', 'pimienta negra', 'comino'],
+    fr: ['bœuf', 'oignon', 'carotte', 'pomme de terre', 'tomate', 'poivron', 'pois chiches', 'sel', 'poivre noir', 'cumin'],
+    pt: ['carne bovina', 'cebola', 'cenoura', 'batata', 'tomate', 'pimentão', 'grão-de-bico', 'sal', 'pimenta-do-reino', 'cominho']
   },
   'Мастава': {
-    ru: ['говядина', 'растительное масло', 'лук', 'морковь', 'картофель', 'болгарский перец', 'рис', 'нут', 'специи'],
-    en: ['beef', 'vegetable oil', 'onion', 'carrot', 'potato', 'bell pepper', 'rice', 'chickpeas', 'spices'],
-    zh: ['牛肉', '植物油', '洋葱', '胡萝卜', '土豆', '甜椒', '大米', '鹰嘴豆', '香料'],
-    es: ['ternera', 'aceite vegetal', 'cebolla', 'zanahoria', 'patata', 'pimiento', 'arroz', 'garbanzos', 'especias'],
-    fr: ['bœuf', 'huile végétale', 'oignon', 'carotte', 'pomme de terre', 'poivron', 'riz', 'pois chiches', 'épices'],
-    pt: ['carne bovina', 'óleo vegetal', 'cebola', 'cenoura', 'batata', 'pimentão', 'arroz', 'grão-de-bico', 'especiarias']
+    ru: ['говядина', 'растительное масло', 'лук', 'морковь', 'картофель', 'болгарский перец', 'рис', 'нут', 'соль', 'перец чёрный', 'зира'],
+    en: ['beef', 'vegetable oil', 'onion', 'carrot', 'potato', 'bell pepper', 'rice', 'chickpeas', 'salt', 'black pepper', 'cumin'],
+    zh: ['牛肉', '植物油', '洋葱', '胡萝卜', '土豆', '甜椒', '大米', '鹰嘴豆', '盐', '黑胡椒', '孜然'],
+    es: ['ternera', 'aceite vegetal', 'cebolla', 'zanahoria', 'patata', 'pimiento', 'arroz', 'garbanzos', 'sal', 'pimienta negra', 'comino'],
+    fr: ['bœuf', 'huile végétale', 'oignon', 'carotte', 'pomme de terre', 'poivron', 'riz', 'pois chiches', 'sel', 'poivre noir', 'cumin'],
+    pt: ['carne bovina', 'óleo vegetal', 'cebola', 'cenoura', 'batata', 'pimentão', 'arroz', 'grão-de-bico', 'sal', 'pimenta-do-reino', 'cominho']
   }
 };
