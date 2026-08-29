@@ -156,12 +156,12 @@ var DISHNAME = {
 var COMP = {
   // со слов Рашида 27.08.2026
   'Казан-кебаб': {
-    ru: ['баранина', 'жареный картофель', 'соль', 'перец чёрный', 'зира'],
-    en: ['lamb', 'fried potatoes', 'salt', 'black pepper', 'cumin'],
-    zh: ['羊肉', '炸土豆', '盐', '黑胡椒', '孜然'],
-    es: ['cordero', 'patatas fritas', 'sal', 'pimienta negra', 'comino'],
-    fr: ['agneau', 'pommes de terre frites', 'sel', 'poivre noir', 'cumin'],
-    pt: ['cordeiro', 'batatas fritas', 'sal', 'pimenta-do-reino', 'cominho']
+    ru: ['баранина', 'жареный картофель', 'растительное масло', 'соль', 'перец чёрный', 'зира'],
+    en: ['lamb', 'fried potatoes', 'vegetable oil', 'salt', 'black pepper', 'cumin'],
+    zh: ['羊肉', '炸土豆', '植物油', '盐', '黑胡椒', '孜然'],
+    es: ['cordero', 'patatas fritas', 'aceite vegetal', 'sal', 'pimienta negra', 'comino'],
+    fr: ['agneau', 'pommes de terre frites', 'huile végétale', 'sel', 'poivre noir', 'cumin'],
+    pt: ['cordeiro', 'batatas fritas', 'óleo vegetal', 'sal', 'pimenta-do-reino', 'cominho']
   },
   'Шурпа': {
     ru: ['говядина', 'лук', 'морковь', 'картофель', 'помидор', 'болгарский перец', 'нут', 'соль', 'перец чёрный', 'зира'],

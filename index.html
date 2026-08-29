@@ -159,7 +159,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="pad" class="ovl hidden" onclick="if(event.target===this)padClose()"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-27.9';
+const APP_VERSION='2026-08-28.1';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -240,10 +240,19 @@ function money(n){return Number(n||0).toFixed(2)+' ¥'}
 function qtyText(q){q=+q||0;return Number.isInteger(q)?String(q):q.toFixed(1)}
 function roundQty(q){return Math.max(0,Math.round((+q||0)*2)/2)}
 function tables(){return (+db.settings.hall||0)+(+db.settings.street||0)}
-function tableName(i){
- i=+i;
- let hall=+db.settings.hall||0;
- return i>hall?'Улица '+(i-hall):'Стол '+i;
+/* Один стол может вести ДВА счёта: бывает, что гости платят каждый за себя.
+   Ключ второго счёта — «5:2», первый остаётся просто «5». Поэтому старые данные
+   и весь прежний код продолжают работать, а разделение включается только там,
+   где официант сам его попросил. */
+function tblNum(k){return +String(k).split(':')[0]}
+function billNo(k){return String(k).split(':')[1]==='2'?2:1}
+function billKey(t,b){return b===2?tblNum(t)+':2':String(tblNum(t))}
+function hasSecond(t){return !!db.open[tblNum(t)+':2']}
+function tableBusy(t){return !!(db.open[tblNum(t)]||db.open[tblNum(t)+':2'])}
+function tableName(k){
+ let i=tblNum(k), hall=+db.settings.hall||0;
+ let base=i>hall?'Улица '+(i-hall):'Стол '+i;
+ return billNo(k)===2?base+' · счёт 2':base;
 }
 // имя из закрытого заказа: сохранённое в чеке имеет приоритет — настройки зала могли поменяться
 function orderName(o){return o.type==='table'?(o.label||tableName(o.id)):'Доставка'}
@@ -378,37 +387,51 @@ function pushMenu(){
  }).catch(()=>alert('Нет связи с сервером.'));
 }
 /* ---------- СТОЛЫ ---------- */
+function billCard(k){
+ let o=db.open[k],sum=total(o);
+ return `<button class="table ${o?'open':''}" onclick="openTable('${k}')"><b>${tableName(k)}</b>${o?`<div class="price">${money(sum)}</div><div class="small">${o.items.length} поз. · ${since(o.started)}</div>`:'<div class="small">Свободен</div>'}</button>`;
+}
+// плитка стола, а следом — плитка второго счёта, если он открыт
 function tableCard(i){
- let o=db.open[i],sum=total(o);
- return `<button class="table ${o?'open':''}" onclick="openTable(${i})"><b>${tableName(i)}</b>${o?`<div class="price">${money(sum)}</div><div class="small">${o.items.length} поз. · ${since(o.started)}</div>`:'<div class="small">Свободен</div>'}</button>`;
+ return billCard(String(i))+(hasSecond(i)?billCard(i+':2'):'');
+}
+// Второй счёт, в который так ничего и не добавили, — мусор на экране.
+// Первый счёт не трогаем: это давнее поведение, официант к нему привык.
+function purgeEmptyBills(){
+ let gone=false;
+ Object.keys(db.open).forEach(k=>{
+  if(billNo(k)===2&&!(db.open[k].items||[]).length){delete db.open[k];gone=true}
+ });
+ if(gone)save();
 }
 function renderTables(){
  hideBar();
+ purgeEmptyBills();
  let hall=+db.settings.hall||0,street=+db.settings.street||0,h='<div id="guest"></div>'+backupWarning();
  if(hall){
-  let busy=0;for(let i=1;i<=hall;i++)if(db.open[i])busy++;
+  let busy=0;for(let i=1;i<=hall;i++)if(tableBusy(i))busy++;
   h+=`<div class="sect first">🏠 Зал <span class="small">${busy?busy+' из '+hall+' занято':hall+' столов, все свободны'}</span></div><div class="tables">`;
   for(let i=1;i<=hall;i++)h+=tableCard(i);
   h+='</div>';
  }
  if(street){
-  let busy=0;for(let i=hall+1;i<=hall+street;i++)if(db.open[i])busy++;
+  let busy=0;for(let i=hall+1;i<=hall+street;i++)if(tableBusy(i))busy++;
   h+=`<div class="sect">☀️ Улица <span class="small">${busy?busy+' из '+street+' занято':street+' столов, все свободны'}</span></div><div class="tables street">`;
   for(let i=hall+1;i<=hall+street;i++)h+=tableCard(i);
   h+='</div>';
  }
  // заказы на столах, которых уже нет в настройках — иначе деньги пропали бы с экрана
- let lost=Object.keys(db.open).filter(k=>{let i=+k;return !(i>=1&&i<=hall+street)});
+ let lost=Object.keys(db.open).filter(k=>{let i=tblNum(k);return !(i>=1&&i<=hall+street)});
  if(lost.length){
   h+='<div class="sect">⚠️ Заказы на убранных столах</div><div class="warn">Этих столов больше нет в настройках, но заказы по ним открыты. Рассчитайте гостей или перенесите заказ на существующий стол.</div><div class="tables">';
   lost.forEach(k=>{
    let o=db.open[k];
-   h+=`<button class="table open" onclick="openTable(${+k})"><b>Стол ${esc(k)}</b><div class="price">${money(total(o))}</div><div class="small">${o.items.length} поз.</div></button>`;
+   h+=`<button class="table open" onclick="openTable('${esc(k)}')"><b>${tableName(k)}</b><div class="price">${money(total(o))}</div><div class="small">${o.items.length} поз.</div></button>`;
   });
   h+='</div>';
  }
  if(!hall&&!street)h+='<div class="panel"><p class="muted">Столы не настроены. Зайдите в «⚙️ Данные» и укажите, сколько столов в зале и на улице.</p></div>';
- let busy=Object.keys(db.open).length,openSum=Object.values(db.open).reduce((s,o)=>s+total(o),0);
+ let busy=new Set(Object.keys(db.open).map(tblNum)).size,openSum=Object.values(db.open).reduce((s,o)=>s+total(o),0);
  if(busy)h+=`<div class="panel"><div class="row"><span>Занято столов: <b>${busy}</b></span><span>Открытых заказов на <b class="price">${money(openSum)}</b></span></div></div>`;
  document.getElementById('tables').innerHTML=h;
  paintGuest();
@@ -419,8 +442,14 @@ function since(t){
  return m<60?m+' мин':Math.floor(m/60)+' ч '+(m%60)+' мин';
 }
 function openTable(n){
+ n=String(n);
  let o=db.open[n]||{items:[],started:new Date().toISOString()};
  db.open[n]=o;save();orderScreen('table',n);
+}
+// второй счёт заводится по просьбе официанта и только для стола, не для доставки
+function otherBill(k){
+ let t=tblNum(k), other=billKey(t, billNo(k)===1?2:1);
+ openTable(other);
 }
 
 /* ---------- ЭКРАН ЗАКАЗА ---------- */
@@ -454,10 +483,18 @@ function orderScreen(type,id){
  }
  h+='<div class="actions">'+
   `<button onclick="show('${type==='table'?'tables':'delivery'}')">← Назад</button>`;
+ if(type==='table'&&!o.items.length&&hasSecond(id))
+  h+=`<button class="blue" onclick="otherBill('${id}')">🧾 Счёт ${billNo(id)===1?2:1}</button>`;
  if(o.items.length){
   h+=`<button class="blue" onclick="printBill('${type}','${id}')">🖨 Пречек</button>`+
      `<button onclick="setDiscount('${type}','${id}')">% Скидка</button>`;
-  if(type==='table')h+=`<button onclick="moveTable(${id})">↔ Перенести</button>`;
+  if(type==='table'){
+   h+=`<button onclick="moveTable('${id}')">↔ Перенести</button>`;
+   // разделение появляется по просьбе официанта: каждый раз не спрашиваем
+   h+=hasSecond(id)
+    ? `<button class="blue" onclick="otherBill('${id}')">🧾 Счёт ${billNo(id)===1?2:1}</button>`
+    : `<button onclick="otherBill('${id}')">🧾 Второй счёт</button>`;
+  }
   else h+=`<button class="${(+o.courier)?'blue':''}" onclick="setCourier('${id}')">🚴 Курьеру${(+o.courier)?': '+money(o.courier):''}</button>`;
   h+=`<button class="primary" onclick="payScreen('${type}','${id}')">✓ Оплата и закрытие</button>`;
  }
@@ -673,9 +710,9 @@ function moveTable(from){
  let group=(title,a,b,cls)=>{
   let s=`<div class="sect">${title}</div><div class="tables ${cls}">`;
   for(let i=a;i<=b;i++){
-   if(i===+from)continue;
+   if(String(i)===String(from))continue;   // сам в себя не переносим, а «счёт 2» в «счёт 1» — можно
    let o=db.open[i];
-   s+=`<button class="table ${o?'open':''}" onclick="doMove(${from},${i})"><b>${tableName(i)}</b><div class="small">${o?'занят · '+money(total(o)):'свободен'}</div></button>`;
+   s+=`<button class="table ${o?'open':''}" onclick="doMove('${from}','${i}')"><b>${tableName(i)}</b><div class="small">${o?'занят · '+money(total(o)):'свободен'}</div></button>`;
   }
   return s+'</div>';
  };
@@ -981,7 +1018,7 @@ function renderReports(){
  h+='</div><div class="panel"><h3>По столам (всё время)</h3>';
  let hall=+db.settings.hall||0,hallSum=0,strSum=0;
  for(let i=1;i<=tables();i++){
-  let s=live.filter(o=>o.type==='table'&&o.id==i).reduce((a,o)=>a+o.total,0);
+  let s=live.filter(o=>o.type==='table'&&tblNum(o.id)==i).reduce((a,o)=>a+o.total,0);
   i>hall?strSum+=s:hallSum+=s;
   h+=`<div class="row"><span>${tableName(i)}</span><b>${money(s)}</b></div>`;
  }
@@ -1803,7 +1840,7 @@ function photoCount(){return db.menu.filter(m=>dishPhoto(m)).length}
 function saveSettings(){
  let nh=Math.max(0,+document.getElementById('sh').value||0);
  let ns=Math.max(0,+document.getElementById('ss').value||0);
- let willLose=Object.keys(db.open).filter(k=>+k>nh+ns);
+ let willLose=Object.keys(db.open).filter(k=>tblNum(k)>nh+ns);
  if(willLose.length&&!confirm('Внимание: на столах '+willLose.map(k=>tableName(k)).join(', ')+' есть открытые заказы, а при новых настройках таких столов не будет.\n\nОни попадут в раздел «Заказы на убранных столах». Продолжить?'))return;
  db.settings.hall=nh;
  db.settings.street=ns;
