@@ -142,7 +142,8 @@ var DISHNAME = {
   'Спрайт':                       { en: 'Sprite', zh: '雪碧', es: 'Sprite', fr: 'Sprite', pt: 'Sprite' },
   'Вода без газа':                { en: 'Still water', zh: '纯净水', es: 'Agua sin gas', fr: 'Eau plate', pt: 'Água sem gás' },
   'Сок':                          { en: 'Juice', zh: '果汁', es: 'Zumo', fr: 'Jus', pt: 'Suco' },
-  'Махито':                       { en: 'Mojito', zh: '莫吉托', es: 'Mojito', fr: 'Mojito', pt: 'Mojito' }
+  'Махито':                       { en: 'Mojito', zh: '莫吉托', es: 'Mojito', fr: 'Mojito', pt: 'Mojito' },
+  'Мохито':                       { en: 'Mojito', zh: '莫吉托', es: 'Mojito', fr: 'Mojito', pt: 'Mojito' }
 };
 
 /* 🔴 СОСТАВ БЛЮД. Пусто — Рашид ещё не давал данные.
@@ -158,6 +159,30 @@ var DISHNAME = {
 var COMP = {
   // Со слов Рашида 27-28.08.2026. «Специи» он расшифровал как соль,
   // чёрный перец и зира — это раскрыто во всех блюдах, где он написал «специи».
+  'Плов': {
+    ru: ['говядина', 'рис', 'морковь', 'лук', 'растительное масло', 'соль', 'перец чёрный', 'зира'],
+    en: ['beef', 'rice', 'carrot', 'onion', 'vegetable oil', 'salt', 'black pepper', 'cumin'],
+    zh: ['牛肉', '大米', '胡萝卜', '洋葱', '植物油', '盐', '黑胡椒', '孜然'],
+    es: ['ternera', 'arroz', 'zanahoria', 'cebolla', 'aceite vegetal', 'sal', 'pimienta negra', 'comino'],
+    fr: ['bœuf', 'riz', 'carotte', 'oignon', 'huile végétale', 'sel', 'poivre noir', 'cumin'],
+    pt: ['carne bovina', 'arroz', 'cenoura', 'cebola', 'óleo vegetal', 'sal', 'pimenta-do-reino', 'cominho']
+  },
+  'Свежий салат': {
+    ru: ['помидор', 'огурец', 'лук', 'зелень'],
+    en: ['tomato', 'cucumber', 'onion', 'fresh herbs'],
+    zh: ['番茄', '黄瓜', '洋葱', '香草'],
+    es: ['tomate', 'pepino', 'cebolla', 'hierbas frescas'],
+    fr: ['tomate', 'concombre', 'oignon', 'herbes fraîches'],
+    pt: ['tomate', 'pepino', 'cebola', 'ervas frescas']
+  },
+  'Оливье': {
+    ru: ['куриное мясо', 'картофель', 'морковь', 'яйца куриные', 'зелёный горошек', 'солёный огурец', 'майонез'],
+    en: ['chicken', 'potato', 'carrot', 'eggs', 'green peas', 'pickled cucumber', 'mayonnaise'],
+    zh: ['鸡肉', '土豆', '胡萝卜', '鸡蛋', '青豌豆', '腌黄瓜', '蛋黄酱'],
+    es: ['pollo', 'patata', 'zanahoria', 'huevo', 'guisantes', 'pepinillo', 'mayonesa'],
+    fr: ['poulet', 'pomme de terre', 'carotte', 'œufs', 'petits pois', 'cornichon', 'mayonnaise'],
+    pt: ['frango', 'batata', 'cenoura', 'ovos', 'ervilhas', 'pepino em conserva', 'maionese']
+  },
   'Казан-кебаб': {
     ru: ['баранина', 'жареный картофель', 'растительное масло', 'соль', 'перец чёрный', 'зира'],
     en: ['lamb', 'fried potatoes', 'vegetable oil', 'salt', 'black pepper', 'cumin'],
@@ -215,12 +240,12 @@ var COMP = {
     pt: ['ayran (leite fermentado)', 'massa folhada', 'tomate', 'pepino', 'ervas frescas', 'sal']
   },
   'Котлета с жареным картофелем': {
-    ru: ['курица', 'сливочное масло', 'картофельное пюре', 'соус', 'соль', 'перец чёрный', 'зира'],
-    en: ['chicken', 'butter', 'mashed potatoes', 'sauce', 'salt', 'black pepper', 'cumin'],
-    zh: ['鸡肉', '黄油', '土豆泥', '酱汁', '盐', '黑胡椒', '孜然'],
-    es: ['pollo', 'mantequilla', 'puré de patata', 'salsa', 'sal', 'pimienta negra', 'comino'],
-    fr: ['poulet', 'beurre', 'purée de pommes de terre', 'sauce', 'sel', 'poivre noir', 'cumin'],
-    pt: ['frango', 'manteiga', 'purê de batata', 'molho', 'sal', 'pimenta-do-reino', 'cominho']
+    ru: ['курица', 'сливочное масло', 'жареный картофель', 'соус', 'соль', 'перец чёрный', 'зира'],
+    en: ['chicken', 'butter', 'fried potatoes', 'sauce', 'salt', 'black pepper', 'cumin'],
+    zh: ['鸡肉', '黄油', '炸土豆', '酱汁', '盐', '黑胡椒', '孜然'],
+    es: ['pollo', 'mantequilla', 'patatas fritas', 'salsa', 'sal', 'pimienta negra', 'comino'],
+    fr: ['poulet', 'beurre', 'pommes de terre frites', 'sauce', 'sel', 'poivre noir', 'cumin'],
+    pt: ['frango', 'manteiga', 'batatas fritas', 'molho', 'sal', 'pimenta-do-reino', 'cominho']
   },
   'Лепёшка': {
     ru: ['мука', 'вода', 'соль'],
