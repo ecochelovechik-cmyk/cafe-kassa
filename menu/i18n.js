@@ -153,4 +153,30 @@ var DISHNAME = {
  *     es: [...], fr: [...], pt: [...]
  *   },
  */
-var COMP = {};
+var COMP = {
+  // со слов Рашида 27.08.2026
+  'Казан-кебаб': {
+    ru: ['баранина', 'жареный картофель', 'специи'],
+    en: ['lamb', 'fried potatoes', 'spices'],
+    zh: ['羊肉', '炸土豆', '香料'],
+    es: ['cordero', 'patatas fritas', 'especias'],
+    fr: ['agneau', 'pommes de terre frites', 'épices'],
+    pt: ['cordeiro', 'batatas fritas', 'especiarias']
+  },
+  'Шурпа': {
+    ru: ['говядина', 'лук', 'морковь', 'картофель', 'помидор', 'болгарский перец', 'нут', 'специи'],
+    en: ['beef', 'onion', 'carrot', 'potato', 'tomato', 'bell pepper', 'chickpeas', 'spices'],
+    zh: ['牛肉', '洋葱', '胡萝卜', '土豆', '番茄', '甜椒', '鹰嘴豆', '香料'],
+    es: ['ternera', 'cebolla', 'zanahoria', 'patata', 'tomate', 'pimiento', 'garbanzos', 'especias'],
+    fr: ['bœuf', 'oignon', 'carotte', 'pomme de terre', 'tomate', 'poivron', 'pois chiches', 'épices'],
+    pt: ['carne bovina', 'cebola', 'cenoura', 'batata', 'tomate', 'pimentão', 'grão-de-bico', 'especiarias']
+  },
+  'Мастава': {
+    ru: ['говядина', 'растительное масло', 'лук', 'морковь', 'картофель', 'болгарский перец', 'рис', 'нут', 'специи'],
+    en: ['beef', 'vegetable oil', 'onion', 'carrot', 'potato', 'bell pepper', 'rice', 'chickpeas', 'spices'],
+    zh: ['牛肉', '植物油', '洋葱', '胡萝卜', '土豆', '甜椒', '大米', '鹰嘴豆', '香料'],
+    es: ['ternera', 'aceite vegetal', 'cebolla', 'zanahoria', 'patata', 'pimiento', 'arroz', 'garbanzos', 'especias'],
+    fr: ['bœuf', 'huile végétale', 'oignon', 'carotte', 'pomme de terre', 'poivron', 'riz', 'pois chiches', 'épices'],
+    pt: ['carne bovina', 'óleo vegetal', 'cebola', 'cenoura', 'batata', 'pimentão', 'arroz', 'grão-de-bico', 'especiarias']
+  }
+};
