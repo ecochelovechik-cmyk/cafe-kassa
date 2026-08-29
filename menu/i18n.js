@@ -140,7 +140,9 @@ var DISHNAME = {
   'Пепси':                        { en: 'Pepsi', zh: '百事可乐', es: 'Pepsi', fr: 'Pepsi', pt: 'Pepsi' },
   'Фанта':                        { en: 'Fanta', zh: '芬达', es: 'Fanta', fr: 'Fanta', pt: 'Fanta' },
   'Спрайт':                       { en: 'Sprite', zh: '雪碧', es: 'Sprite', fr: 'Sprite', pt: 'Sprite' },
-  'Вода без газа':                { en: 'Still water', zh: '纯净水', es: 'Agua sin gas', fr: 'Eau plate', pt: 'Água sem gás' }
+  'Вода без газа':                { en: 'Still water', zh: '纯净水', es: 'Agua sin gas', fr: 'Eau plate', pt: 'Água sem gás' },
+  'Сок':                          { en: 'Juice', zh: '果汁', es: 'Zumo', fr: 'Jus', pt: 'Suco' },
+  'Махито':                       { en: 'Mojito', zh: '莫吉托', es: 'Mojito', fr: 'Mojito', pt: 'Mojito' }
 };
 
 /* 🔴 СОСТАВ БЛЮД. Пусто — Рашид ещё не давал данные.
@@ -154,7 +156,8 @@ var DISHNAME = {
  *   },
  */
 var COMP = {
-  // со слов Рашида 27.08.2026
+  // Со слов Рашида 27-28.08.2026. «Специи» он расшифровал как соль,
+  // чёрный перец и зира — это раскрыто во всех блюдах, где он написал «специи».
   'Казан-кебаб': {
     ru: ['баранина', 'жареный картофель', 'растительное масло', 'соль', 'перец чёрный', 'зира'],
     en: ['lamb', 'fried potatoes', 'vegetable oil', 'salt', 'black pepper', 'cumin'],
@@ -178,5 +181,53 @@ var COMP = {
     es: ['ternera', 'aceite vegetal', 'cebolla', 'zanahoria', 'patata', 'pimiento', 'arroz', 'garbanzos', 'sal', 'pimienta negra', 'comino'],
     fr: ['bœuf', 'huile végétale', 'oignon', 'carotte', 'pomme de terre', 'poivron', 'riz', 'pois chiches', 'sel', 'poivre noir', 'cumin'],
     pt: ['carne bovina', 'óleo vegetal', 'cebola', 'cenoura', 'batata', 'pimentão', 'arroz', 'grão-de-bico', 'sal', 'pimenta-do-reino', 'cominho']
+  },
+  'Чахохбили': {
+    ru: ['курица', 'растительное масло', 'лук', 'томатная паста', 'помидоры', 'болгарский перец', 'базилик', 'соль', 'перец чёрный', 'зира'],
+    en: ['chicken', 'vegetable oil', 'onion', 'tomato paste', 'tomatoes', 'bell pepper', 'basil', 'salt', 'black pepper', 'cumin'],
+    zh: ['鸡肉', '植物油', '洋葱', '番茄酱', '番茄', '甜椒', '罗勒', '盐', '黑胡椒', '孜然'],
+    es: ['pollo', 'aceite vegetal', 'cebolla', 'pasta de tomate', 'tomates', 'pimiento', 'albahaca', 'sal', 'pimienta negra', 'comino'],
+    fr: ['poulet', 'huile végétale', 'oignon', 'concentré de tomate', 'tomates', 'poivron', 'basilic', 'sel', 'poivre noir', 'cumin'],
+    pt: ['frango', 'óleo vegetal', 'cebola', 'extrato de tomate', 'tomates', 'pimentão', 'manjericão', 'sal', 'pimenta-do-reino', 'cominho']
+  },
+  'Чечевичный суп': {
+    ru: ['чечевица', 'маргарин', 'лук', 'морковь', 'картофель', 'соль', 'перец чёрный', 'зира'],
+    en: ['lentils', 'margarine', 'onion', 'carrot', 'potato', 'salt', 'black pepper', 'cumin'],
+    zh: ['扁豆', '人造黄油', '洋葱', '胡萝卜', '土豆', '盐', '黑胡椒', '孜然'],
+    es: ['lentejas', 'margarina', 'cebolla', 'zanahoria', 'patata', 'sal', 'pimienta negra', 'comino'],
+    fr: ['lentilles', 'margarine', 'oignon', 'carotte', 'pomme de terre', 'sel', 'poivre noir', 'cumin'],
+    pt: ['lentilhas', 'margarina', 'cebola', 'cenoura', 'batata', 'sal', 'pimenta-do-reino', 'cominho']
+  },
+  'Курутоби гушти': {
+    ru: ['айран', 'слоёное тесто', 'говядина', 'помидор', 'огурцы', 'зелень', 'соль'],
+    en: ['ayran (fermented milk)', 'puff pastry', 'beef', 'tomato', 'cucumber', 'fresh herbs', 'salt'],
+    zh: ['艾兰发酵奶饮 (ayran)', '千层酥皮', '牛肉', '番茄', '黄瓜', '香草', '盐'],
+    es: ['ayrán (leche fermentada)', 'hojaldre', 'ternera', 'tomate', 'pepino', 'hierbas frescas', 'sal'],
+    fr: ['ayran (lait fermenté)', 'pâte feuilletée', 'bœuf', 'tomate', 'concombre', 'herbes fraîches', 'sel'],
+    pt: ['ayran (leite fermentado)', 'massa folhada', 'carne bovina', 'tomate', 'pepino', 'ervas frescas', 'sal']
+  },
+  'Курутоб': {
+    ru: ['айран', 'слоёное тесто', 'помидор', 'огурцы', 'зелень', 'соль'],
+    en: ['ayran (fermented milk)', 'puff pastry', 'tomato', 'cucumber', 'fresh herbs', 'salt'],
+    zh: ['艾兰发酵奶饮 (ayran)', '千层酥皮', '番茄', '黄瓜', '香草', '盐'],
+    es: ['ayrán (leche fermentada)', 'hojaldre', 'tomate', 'pepino', 'hierbas frescas', 'sal'],
+    fr: ['ayran (lait fermenté)', 'pâte feuilletée', 'tomate', 'concombre', 'herbes fraîches', 'sel'],
+    pt: ['ayran (leite fermentado)', 'massa folhada', 'tomate', 'pepino', 'ervas frescas', 'sal']
+  },
+  'Котлета с жареным картофелем': {
+    ru: ['курица', 'сливочное масло', 'картофельное пюре', 'соус', 'соль', 'перец чёрный', 'зира'],
+    en: ['chicken', 'butter', 'mashed potatoes', 'sauce', 'salt', 'black pepper', 'cumin'],
+    zh: ['鸡肉', '黄油', '土豆泥', '酱汁', '盐', '黑胡椒', '孜然'],
+    es: ['pollo', 'mantequilla', 'puré de patata', 'salsa', 'sal', 'pimienta negra', 'comino'],
+    fr: ['poulet', 'beurre', 'purée de pommes de terre', 'sauce', 'sel', 'poivre noir', 'cumin'],
+    pt: ['frango', 'manteiga', 'purê de batata', 'molho', 'sal', 'pimenta-do-reino', 'cominho']
+  },
+  'Лепёшка': {
+    ru: ['мука', 'вода', 'соль'],
+    en: ['wheat flour', 'water', 'salt'],
+    zh: ['小麦面粉', '水', '盐'],
+    es: ['harina de trigo', 'agua', 'sal'],
+    fr: ['farine de blé', 'eau', 'sel'],
+    pt: ['farinha de trigo', 'água', 'sal']
   }
 };
