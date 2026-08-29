@@ -159,7 +159,7 @@ label{font-size:14px;font-weight:bold;display:block;margin-top:8px}
 <div id="pad" class="ovl hidden" onclick="if(event.target===this)padClose()"></div>
 <div id="receipt"></div>
 <script>
-const APP_VERSION='2026-08-28.1';
+const APP_VERSION='2026-08-28.2';
 // фото, поставляемые вместе с приложением: обновляются у всех при выходе новой версии
 // и не занимают память устройства. Своё фото, снятое на телефон, всегда важнее.
 const STOCK_PHOTOS={
@@ -381,7 +381,7 @@ function dropGuest(id){
 function pushMenu(){
  if(!srvOn())return alert('Сначала укажите адрес сервера и ключ.');
  let items=db.menu.map(m=>({n:m.n,p:+m.p||0,c:m.c||'Прочее',
-  left:stockOf(m)===null?null:freeQty(m.n)}));
+  left:stockOf(m)===null?null:freeQty(m.n), desc:m.desc||''}));
  api('/api/menu',{method:'POST',body:JSON.stringify({items:items})}).then(r=>{
   alert(r&&r.ok?('Меню отправлено гостям: '+r.count+' блюд.'):('Не получилось: '+((r&&r.error)||'?')));
  }).catch(()=>alert('Нет связи с сервером.'));
@@ -1670,7 +1670,7 @@ function renderMenu(){
   '<label>Категория</label><input id="mc" list="catlist" placeholder="Основные">'+
   '<datalist id="catlist">'+cats.map(c=>`<option value="${esc(c)}">`).join('')+'</datalist>'+
   '<button class="primary" onclick="addMenu()">Добавить в меню</button><hr>'+
-  '<p class="small muted">У каждого блюда ниже есть кнопка <b>📦</b> — это остаток: сколько порций есть сейчас. Когда порции кончатся, блюдо станет серым и его нельзя будет пробить. Пусто — остаток не считаем.</p>';
+  '<p class="small muted">У каждого блюда ниже есть кнопка <b>📦</b> — это остаток: сколько порций есть сейчас. Когда порции кончатся, блюдо станет серым и его нельзя будет пробить. Пусто — остаток не считаем.<br><b>📝 состав</b> — что входит в блюдо: гость увидит это в меню, когда нажмёт на блюдо.</p>';
  cats.forEach(c=>{
   h+=`<h3>${esc(c)}</h3>`;
   db.menu.forEach((m,i)=>{
@@ -1679,8 +1679,10 @@ function renderMenu(){
    let ph=dishPhoto(m);
    h+=`<div class="mrow">`+
       (ph?`<img class="mph" src="${ph}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;noph&quot;>🍽️</div>'">`:'<div class="noph">🍽️</div>')+
-      `<span class="txt">${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span>${stockOf(m)===null?'':`<br><span class="small" style="color:${freeQty(m.n)>0?'#166534':'#dc2626'}">📦 ${freeQty(m.n)>0?'осталось '+qtyText(freeQty(m.n)):'закончилось'}${reservedQty(m.n)?' · занято в заказах '+qtyText(reservedQty(m.n)):''}</span>`}</span>`+
-      `<span class="actions"><button class="${stockOf(m)===null?'':'blue'}" onclick="setStock(${i})">📦 ${stockOf(m)===null?'остаток':qtyText(freeQty(m.n))}</button><button onclick="pickPhoto(${i})">📷</button>`+
+      `<span class="txt">${esc(m.n)} — <b class="price">${money(m.p)}</b><br><span class="small">${k?`себестоимость ${money(k)} · прибыль ${money(marg)} (${pct}%)`:'⚠️ себестоимость не указана'}</span>${stockOf(m)===null?'':`<br><span class="small" style="color:${freeQty(m.n)>0?'#166534':'#dc2626'}">📦 ${freeQty(m.n)>0?'осталось '+qtyText(freeQty(m.n)):'закончилось'}${reservedQty(m.n)?' · занято в заказах '+qtyText(reservedQty(m.n)):''}</span>`}${m.desc?`<br><span class="small muted">📝 ${esc(m.desc)}</span>`:''}</span>`+
+      `<span class="actions"><button class="${stockOf(m)===null?'':'blue'}" onclick="setStock(${i})">📦 ${stockOf(m)===null?'остаток':qtyText(freeQty(m.n))}</button>`+
+      `<button class="${m.desc?'blue':''}" onclick="setDesc(${i})">📝 состав</button>`+
+      `<button onclick="pickPhoto(${i})">📷</button>`+
       (m.img?`<button onclick="dropPhoto(${i})">✕ фото</button>`:'')+
       `<button onclick="editMenu(${i})">✏️</button><button class="danger" onclick="delMenu(${i})">Удалить</button></span></div>`;
   });
@@ -1738,6 +1740,17 @@ function setStock(i){
   hint:(cur===null?'Сейчас остаток не считаем. ':'')+'Занято открытыми заказами: '+qtyText(reservedQty(m.n)),
   onOk:function(v){m.st=roundQty(v);save();renderMenu()},
   onRemove:function(){delete m.st;save();renderMenu()},removeLabel:'Не считать'});
+}
+// Состав блюда для гостевого меню. Пишет официант — он один знает,
+// что реально в казане. Пусто — у гостя будет «уточните у официанта».
+function setDesc(i){
+ let m=db.menu[i];
+ let v=prompt('Состав «'+m.n+'» — через запятую.\n\nНапример: говядина, лук, морковь, картофель, соль, зира.\n\nГость увидит это в карточке блюда. Пусто — убрать состав.', m.desc||'');
+ if(v===null)return;
+ v=v.trim();
+ if(v)m.desc=v.slice(0,400); else delete m.desc;
+ save();renderMenu();
+ if(srvOn())alert('Сохранено. Чтобы гости увидели, нажмите «📤 Обновить меню для гостей» в разделе «⚙️ Данные».');
 }
 function delMenu(i){
  if(!confirm('Удалить «'+db.menu[i].n+'» из меню? На уже закрытые заказы это не повлияет.'))return;

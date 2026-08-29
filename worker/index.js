@@ -21,6 +21,7 @@ const LIMITS = {
   items: 30,        // позиций в одном заказе
   nameLen: 60,      // длина названия блюда
   noteLen: 200,     // длина пожелания
+  descLen: 400,     // длина состава блюда
   qty: 99,          // порций одного блюда
   table: 99,        // номер стола
   pendingPerTable: 5,
@@ -155,6 +156,9 @@ async function putMenu(request, env) {
     // left: сколько порций осталось. null — остаток не ведут, блюдо всегда доступно.
     one.left = (m && (m.left === null || m.left === undefined)) ? null : cleanQty(m.left);
     if (m && m.img) one.img = clampStr(m.img, 200);
+    // состав блюда, как его написал официант в кассе
+    const desc = clampStr(m && m.desc, LIMITS.descLen);
+    if (desc) one.desc = desc;
     return one;
   }).filter(function (m) { return m.n; });
 

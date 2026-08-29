@@ -84,7 +84,7 @@ footer b{color:#374151}
 .dcard .pr{font-size:26px;font-weight:800;color:#15803d}
 .dcard .st{font-size:14px;color:#6b7280}
 .dcard .st.zero{color:#dc2626;font-weight:700}
-.dcard h4{margin:18px 0 8px;font-size:15px;color:#374151;text-transform:uppercase;letter-spacing:.4px}
+.dcard h4{margin:14px 0 8px;font-size:15px;color:#374151;text-transform:uppercase;letter-spacing:.4px}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chips span{background:#f3f4f6;border-radius:999px;padding:7px 13px;font-size:15px;color:#374151}
 .dcard .nocomp{font-size:14px;color:#9ca3af;line-height:1.5}
@@ -192,7 +192,28 @@ var LANG = detectLang();
 function t(k){ return (UI[LANG] && UI[LANG][k]) || UI.ru[k] || k; }
 function dishName(n){ var d = DISHNAME[n]; return (LANG !== 'ru' && d && d[LANG]) || n; }
 function catName(c){ var d = CAT[c]; return (LANG !== 'ru' && d && d[LANG]) || c; }
-function compOf(n){ var c = COMP[n]; if(!c) return null; return c[LANG] || c.en || c.ru || null; }
+var DESC = {};   // состав, введённый официантом в кассе (по-русски)
+function same(a, b){
+ if(!a || !b) return false;
+ var norm = function(x){ return x.join(',').toLowerCase().replace(/ё/g,'е').replace(/\s+/g,''); };
+ return norm(a) === norm(b);
+}
+/* Что показать гостю.
+   Главная ловушка здесь — устаревший перевод. Официант правит состав в кассе,
+   а переводы лежат в этом файле и правятся вручную. Поэтому сверяем русский
+   текст из кассы с русским оригиналом перевода: разошлись — перевод устарел,
+   и честнее показать свежий русский, чем красивый, но неверный перевод.
+   Ничего не придумываем: нет ни того, ни другого — «уточните у официанта». */
+function compOf(n){
+ var c = COMP[n], d = DESC[n];
+ if(d && d.length){
+  if(LANG === 'ru') return d;                       // касса — источник правды
+  if(c && c[LANG] && same(d, c.ru)) return c[LANG]; // перевод сделан с этого же текста
+  return d;                                         // перевод устарел или его нет
+ }
+ if(c) return c[LANG] || c.en || c.ru || null;
+ return null;
+}
 
 function tableName(i){
  i = +i;
@@ -326,9 +347,9 @@ function openDish(name){
   '<div class="body">' +
   '<h3>' + esc(dishName(name)) + '</h3>' +
   '<div class="cat">' + esc(catName(d.c)) + (LANG !== 'ru' ? ' · ' + esc(name) : '') + '</div>' +
-  '<div class="row"><span class="pr">' + d.p + ' ¥</span>' +
-  (stockLine(d) ? '<span class="st' + (out ? ' zero' : '') + '">' + esc(stockLine(d)) + '</span>' : '') +
-  '</div>' +
+  // цену в карточке не показываем: она есть на плитке, а здесь мешает читать состав
+  (stockLine(d) ? '<div class="row"><span class="st' + (out ? ' zero' : '') + '">' +
+    esc(stockLine(d)) + '</span></div>' : '') +
   '<h4>' + esc(t('comp')) + '</h4>' +
   (comp && comp.length
     ? '<div class="chips">' + comp.map(function(x){ return '<span>' + esc(x) + '</span>'; }).join('') + '</div>'
@@ -414,6 +435,12 @@ function loadLive(){
  if(!TNUM) return;   // без номера стола заказ отправлять некуда
  fetchTimeout(API + '/api/menu', 8000).then(function(r){ return r.json(); }).then(function(res){
   if(!res || !res.ok || !res.items || !res.items.length) return;
+  DESC = {};
+  res.items.forEach(function(m){
+   if(!m.desc) return;
+   DESC[m.n] = String(m.desc).split(/[,;]/).map(function(x){ return x.trim(); })
+    .filter(function(x){ return x; });
+  });
   dishes = res.items.map(function(m){
    return {c: m.c || 'Прочее', n: m.n, p: m.p,
            left: (m.left === null || m.left === undefined) ? null : m.left};
